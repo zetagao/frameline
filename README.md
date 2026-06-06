@@ -1,5 +1,7 @@
 # Frameline
 
+English | [简体中文](README.zh-CN.md)
+
 **An AI storyboard tool for film & ad professionals.**
 Paste a scene's script → AI breaks it into a real shot table (shot size, camera move, lens, axis, blocking) → generates black‑and‑white hand‑drawn cinematic boards → export to PDF, an Excel call sheet, EDL or FCPXML.
 
