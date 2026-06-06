@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Frameline">
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#18181B" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1"/>
+  <g fill="#F5F5F5">
+    <rect x="15" y="17" width="33" height="8.5" rx="2.5"/>
+    <rect x="15" y="29" width="23.5" height="8.5" rx="2.5"/>
+    <rect x="15" y="41" width="10" height="8.5" rx="2.5"/>
+  </g>
+</svg>

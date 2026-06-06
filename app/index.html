@@ -1,0 +1,2637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Frameline — Untitled Scene</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="shots-embedded.js"></script>
+<style>
+  :root {
+    --bg: #0E0E0F;
+    --surface: #161618;
+    --surface-2: #1C1C1F;
+    --border: #26262A;
+    --border-strong: #36363B;
+    --text: #F5F5F5;
+    --text-dim: #8B8B92;
+    --text-faint: #5A5A60;
+    --accent: #FFFFFF;        /* 纯白 — 最高强调，用得少 */
+    --accent-dim: #6B6B72;    /* 中性灰 — accent 的低强度版本 */
+    --accent-soft: rgba(255,255,255,0.08);   /* 微高亮背景 */
+    --accent-soft-border: rgba(255,255,255,0.16);
+    --paper: #18181B;       /* 分镜表"纸面" */
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .tracking-tightest { letter-spacing: -0.02em; }
+  .eyebrow {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+  /* Topbar */
+  .topbar {
+    height: 54px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(14,14,15,0.88);
+    backdrop-filter: blur(14px);
+  }
+  .topbar-sep {
+    width: 1px; height: 16px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .project-switcher {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 9px 5px 10px;
+    border-radius: 7px;
+    transition: background 0.15s;
+    cursor: pointer;
+    font-size: 12.5px;
+  }
+  .project-switcher:hover { background: var(--surface-2); }
+  .project-switcher .crumb-faint { color: var(--text-faint); }
+  .project-switcher .crumb-name { color: var(--text); font-weight: 500; }
+  .project-switcher .chev {
+    color: var(--text-faint);
+    margin-left: 1px;
+  }
+  .draft-pill {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .scene-meta-bar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 5px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .scene-meta-bar .label { color: var(--text-faint); }
+  .scene-meta-bar .val { color: var(--text); }
+  .scene-meta-bar .save-dot {
+    display: inline-block;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #4ADE80;
+    margin-right: 6px;
+    vertical-align: middle;
+    box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.18);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 9px;
+    user-select: none;
+  }
+  .logo-mark {
+    display: flex; align-items: center;
+  }
+  .logo-mark svg {
+    display: block;
+    fill: var(--text);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .logo:hover .logo-mark svg { transform: translateY(-1px); }
+  .logo-wordmark {
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+  }
+  .logo-wordmark .accent {
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  /* Left panel */
+  .panel-left {
+    width: 360px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .scene-slug-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    width: 100%;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .scene-slug-input::placeholder { color: var(--text-faint); }
+  .script-textarea {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    width: 100%;
+    padding: 14px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .script-textarea:focus { border-color: var(--border-strong); }
+  .script-textarea::placeholder { color: var(--text-faint); }
+  .btn-primary {
+    background: var(--text);
+    color: #0A0A0A;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-weight: 600;
+    font-size: 13.5px;
+    width: 100%;
+    transition: background 0.2s, transform 0.05s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary:hover { background: #E8E8E8; }
+  .btn-primary:active { transform: scale(0.99); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: border-color 0.2s, background 0.2s, transform 0.06s;
+  }
+  .btn-ghost:hover { border-color: var(--border-strong); background: var(--surface-2); }
+  .btn-ghost:active { transform: scale(0.97); }
+  .btn-export {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 11px 6px 9px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: all 0.15s, transform 0.06s;
+    display: flex; align-items: center; gap: 7px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .btn-export:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-2); }
+  .btn-export:active { transform: scale(0.97); }
+  .btn-export svg { opacity: 0.85; transition: opacity 0.15s; display: inline-block; flex-shrink: 0; }
+  .btn-export:hover svg { opacity: 1; }
+
+  /* Main storyboard area */
+  .storyboard-area {
+    background: var(--bg);
+    overflow-y: auto;
+  }
+  .sheet-header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(14,14,15,0.9);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 10;
+  }
+
+  /* Shot row */
+  .shot-row {
+    display: grid;
+    grid-template-columns: 60px 220px 1fr 96px;
+    gap: 24px;
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.18s, grid-template-columns 0.32s cubic-bezier(0.4,0,0.2,1), gap 0.32s cubic-bezier(0.4,0,0.2,1), padding 0.32s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+  }
+  .shot-row:hover { background: rgba(255,255,255,0.015); }
+  .shot-row:hover .shot-num { color: var(--text); }
+  .shot-num {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .shot-num-big {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .shot-num-label {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.15em;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  /* Thumbnail */
+  .thumb {
+    width: 220px;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    background: #F5F1E8;  /* 纸感米白 */
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, width 0.32s cubic-bezier(0.4,0,0.2,1);
+  }
+  .thumb:not(.thumb-empty) { cursor: zoom-in; }
+  .thumb:not(.thumb-empty):hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+  }
+  .thumb:not(.thumb-empty):hover img { transform: scale(1.045); }
+  .thumb-empty {
+    background: var(--surface-2);
+    border: 1px dashed var(--border-strong);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .thumb-empty .generate-btn {
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: var(--accent);
+    color: #1A1A1A;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .thumb-empty:hover .generate-btn { opacity: 1; }
+  .thumb-empty:hover { border-color: var(--accent-dim); }
+  .thumb-placeholder-glyph {
+    color: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s;
+  }
+  .thumb-empty:hover .thumb-placeholder-glyph { opacity: 0; }
+
+  /* Chips */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 9px;
+    border-radius: 4px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .chip-label {
+    color: var(--text-faint);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-right: 8px;
+    font-weight: 500;
+  }
+  .duration {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .desc {
+    color: var(--text);
+    font-size: 13.5px;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+  .dialogue {
+    color: var(--text-dim);
+    font-size: 12.5px;
+    font-style: italic;
+    line-height: 1.55;
+    border-left: 2px solid var(--accent-dim);
+    padding-left: 10px;
+  }
+  .sfx-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--accent);
+  }
+  /* Per-row axis / setup marker (replaces old per-row blocking box) */
+  .axis-marker {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+    padding-top: 2px;
+  }
+  .setup-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11.5px; font-weight: 500;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: 5px; padding: 4px 9px;
+    white-space: nowrap;
+    transition: border-color 0.15s, color 0.15s;
+    cursor: pointer;
+  }
+  .setup-badge:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .axis-note {
+    font-size: 11px; color: var(--text-dim);
+    white-space: nowrap; line-height: 1.4;
+  }
+
+  /* Scene-level floor plan panel */
+  /* Scene floor plan — floating window (Previs Pro 2D style) */
+  .floorplan {
+    position: fixed;
+    top: 50%; left: 50%;
+    width: 760px; max-width: calc(100vw - 48px);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.55);
+    z-index: 900;
+    overflow: hidden;
+    opacity: 0; visibility: hidden;
+    transform: translate(-50%, -50%) scale(0.98);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  }
+  .floorplan.open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+  .floorplan-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px 11px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    cursor: move;
+    user-select: none;
+  }
+  .fp-title {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.16em; color: var(--text);
+    text-transform: uppercase;
+  }
+  .fpw-close {
+    margin-left: 4px;
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); transition: all 0.15s; cursor: pointer;
+  }
+  .fpw-close:hover { background: var(--surface); color: var(--text); }
+  /* Active-shot chip in the header (which camera is shown right now) */
+  .fp-active-cap {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: 0.06em; color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px; padding: 4px 10px;
+  }
+  .fp-active-cap .lens { color: var(--text-dim); }
+  .fp-body { padding: 14px; }
+  .fp-canvas {
+    display: block; width: 100%; height: auto;
+    border-radius: 6px;
+  }
+  /* clickable camera markers inside the plan */
+  .fp-cam-marker { cursor: pointer; }
+  .fp-cam-marker .mk-body { transition: fill 0.15s, stroke 0.15s; }
+  .fp-cam-marker:hover .mk-body { fill: #2C3138; stroke: #5A6068; }
+  /* the active camera's cone/body must not eat clicks meant for other markers */
+  .fp-active-cam, .fp-active-cam * { pointer-events: none; }
+  /* launcher button in the sheet header */
+  .btn-floorplan-active { border-color: var(--accent) !important; color: var(--accent) !important; }
+  /* row highlight when its camera is the active one in the plan */
+  .shot-row.shot-active { background: rgba(255,255,255,0.035); }
+  .shot-row.shot-active::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: var(--accent);
+  }
+
+  /* Scrollbar */
+  .storyboard-area::-webkit-scrollbar { width: 10px; }
+  .storyboard-area::-webkit-scrollbar-track { background: transparent; }
+  .storyboard-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; border: 2px solid var(--bg); }
+  .storyboard-area::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+  /* Section divider in sheet */
+  .sheet-divider {
+    padding: 14px 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-tag {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.18em;
+  }
+
+  /* Avatar */
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3A3A42 0%, #1F1F23 100%);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+  }
+  .avatar:hover {
+    border-color: var(--accent-dim);
+    transform: translateY(-0.5px);
+  }
+
+  /* Status dot */
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* Animation init state */
+  .reveal { opacity: 0; transform: translateY(12px); }
+
+  /* ============ Interaction CSS ============ */
+  button, .chip { cursor: pointer; }
+  .scene-slug-input, .script-textarea { cursor: text; }
+
+  /* Toast */
+  #toast-stack {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 9999; pointer-events: none;
+  }
+  .toast {
+    background: rgba(28,28,31,0.96);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 10px 16px; border-radius: 8px;
+    font-size: 13px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    display: flex; align-items: center; gap: 10px;
+    animation: toast-in 0.3s ease-out;
+    pointer-events: auto;
+    min-width: 200px;
+  }
+  .toast.leaving { animation: toast-out 0.25s ease-in forwards; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
+  .toast .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .toast.success .dot { background: #4ADE80; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { display: flex; opacity: 1; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    width: 480px; max-width: 92vw;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    transform: translateY(8px) scale(0.98);
+    transition: transform 0.25s ease-out;
+  }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+  .modal-title { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); transition: all 0.15s;
+  }
+  .modal-close:hover { background: var(--surface-2); color: var(--text); }
+  .modal-section { position: relative; }
+  .modal-tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 8px; margin: 18px 0 16px; }
+  .modal-tab {
+    flex: 1; padding: 8px 12px; border-radius: 6px;
+    font-size: 12.5px; font-weight: 500; color: var(--text-dim);
+    transition: all 0.15s; text-align: center;
+  }
+  .modal-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 0 var(--border-strong); }
+  .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .modal-field label { font-size: 11px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; }
+  .modal-field input, .modal-field select {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 7px; padding: 9px 12px; color: var(--text);
+    font-size: 13px; outline: none;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    transition: border-color 0.15s;
+  }
+  .modal-field input:focus, .modal-field select:focus { border-color: var(--border-strong); }
+  .modal-summary {
+    background: var(--surface-2);
+    border-radius: 8px; padding: 12px 14px;
+    font-size: 12px; color: var(--text-dim);
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 18px;
+  }
+  .modal-summary .mono { color: var(--text); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+  .modal-btn-primary {
+    background: var(--text); color: #0A0A0A;
+    border-radius: 7px; padding: 9px 16px;
+    font-weight: 600; font-size: 13px;
+    transition: background 0.15s;
+  }
+  .modal-btn-primary:hover { background: #E8E8E8; }
+  .modal-btn-secondary {
+    background: transparent; border: 1px solid var(--border-strong);
+    color: var(--text); border-radius: 7px;
+    padding: 9px 16px; font-size: 13px; font-weight: 500;
+    transition: all 0.15s;
+  }
+  .modal-btn-secondary:hover { background: var(--surface-2); }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1100;
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .lightbox.open { display: flex; opacity: 1; }
+  .lightbox img {
+    max-width: 90vw; max-height: 86vh;
+    border-radius: 8px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+    transform: scale(0.96);
+    transition: transform 0.3s ease-out;
+  }
+  .lightbox.open img { transform: scale(1); }
+  .lightbox-meta {
+    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+    color: var(--text-dim); font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.12em;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .lightbox-meta span.divider { color: var(--text-faint); }
+  .lightbox-close {
+    position: absolute; top: 24px; right: 24px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .lightbox-close:hover { background: rgba(255,255,255,0.15); }
+
+  /* Loading overlay (for "拆解为镜头") */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(14,14,15,0.78);
+    backdrop-filter: blur(8px);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 900;
+    gap: 18px;
+  }
+  .loading-overlay.open { display: flex; }
+  .loading-spinner {
+    width: 38px; height: 38px;
+    border: 2px solid var(--border-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px; color: var(--text-dim);
+    letter-spacing: 0.08em;
+    min-height: 16px;
+  }
+  .loading-progress {
+    width: 220px; height: 2px; background: var(--surface-2);
+    border-radius: 1px; overflow: hidden;
+  }
+  .loading-progress-bar {
+    height: 100%; background: var(--accent);
+    width: 0%; transition: width 0.3s ease-out;
+  }
+
+  /* Chip dropdown */
+  .chip-wrap { position: relative; display: inline-block; }
+  .chip-menu {
+    position: absolute; top: calc(100% + 4px); left: 0;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    padding: 4px;
+    min-width: 110px;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    transform-origin: top left;
+    opacity: 0; visibility: hidden;
+    transform: translateY(-4px) scale(0.97);
+    transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s;
+  }
+  .chip-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+  .chip-menu-item {
+    padding: 7px 10px; border-radius: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: 0.08em; color: var(--text-dim);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .chip-menu-item:hover { background: var(--surface-2); color: var(--text); }
+  .chip-menu-item.selected { color: var(--accent); }
+
+  /* Chip selected state */
+  .chip.selected { border-color: var(--accent); color: var(--accent); }
+
+  /* Row hover toolbar */
+  .row-toolbar {
+    position: absolute; top: 14px; right: 18px;
+    display: flex; gap: 4px;
+    opacity: 0; transform: translateY(-3px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  .shot-row:hover .row-toolbar { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .row-toolbar button {
+    width: 26px; height: 26px; border-radius: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .row-toolbar button:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-2); }
+
+  /* Status indicator pulsing during regenerate */
+  .status-dot.pulsing { animation: pulse 0.8s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+  /* LIST view */
+  body.list-view .shot-row {
+    grid-template-columns: 50px 120px 1fr 60px;
+    gap: 16px;
+    padding: 14px 24px;
+  }
+  body.list-view .shot-row .thumb { width: 120px; }
+  body.list-view .shot-row .axis-marker { display: none; }
+  body.list-view .desc { font-size: 12.5px; }
+  body.list-view .shot-num-big { font-size: 16px; }
+
+  /* Reveal animation for newly inserted shots */
+  .shot-row.fade-in { animation: shot-fade-in 0.5s ease-out; }
+  @keyframes shot-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Click animation on regenerate */
+  .spin-once { animation: spin 0.7s linear; display: inline-block; }
+
+  /* ============ Print pages (rendered to PDF via html2canvas) ============ */
+  /* 794x1123 ≈ A4 @ 96dpi */
+  #print-root {
+    position: absolute;
+    left: -10000px; top: 0;
+    width: 794px;
+    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  }
+  .print-page {
+    width: 794px; height: 1123px;
+    background: #F5F5F5;
+    color: #1A1612;
+    padding: 56px 56px 48px 56px;
+    box-sizing: border-box;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .print-page.cover {
+    background: #0E0E0F;
+    color: #F5F5F5;
+    padding: 100px 64px;
+  }
+  .print-page.cover .pp-brand {
+    font-size: 36px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .print-page.cover .pp-eyebrow {
+    font-size: 10px; letter-spacing: 0.3em; color: #8B8B92; margin-top: 6px; text-transform: uppercase;
+  }
+  .print-page.cover .pp-scene-title {
+    font-size: 30px; font-weight: 600; letter-spacing: -0.01em; margin-top: 120px;
+  }
+  .print-page.cover .pp-slug {
+    font-size: 14px; color: #1A1A1A; margin-top: 12px; letter-spacing: 0.05em;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .print-page.cover .pp-meta {
+    margin-top: 16px; font-size: 12px; color: #8B8B92; letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .print-page.cover .pp-footer {
+    position: absolute; bottom: 56px; left: 64px;
+    font-size: 10px; color: #5A5A60;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    letter-spacing: 0.08em;
+  }
+  .pp-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: #4A4A4F; padding-bottom: 14px; border-bottom: 1px solid #B5B5BA;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .pp-header .b { font-weight: 700; color: #1A1612; }
+  .pp-shots {
+    display: grid;
+    gap: 28px;
+    margin-top: 24px;
+  }
+  .pp-shots.pp-1 { grid-template-columns: 1fr; }
+  .pp-shots.pp-2 { grid-template-columns: 1fr; }
+  .pp-shots.pp-4 { grid-template-columns: 1fr 1fr; gap: 22px; }
+  .pp-shots.pp-6 { grid-template-columns: 1fr 1fr; gap: 18px; }
+  .pp-shot {
+    display: flex; flex-direction: column;
+    background: transparent;
+  }
+  .pp-thumb-wrap { position: relative; }
+  .pp-thumb {
+    width: 100%; aspect-ratio: 16/9;
+    background: #1A1612;
+    border: 1px solid #1A1612;
+    object-fit: cover;
+    display: block;
+  }
+  .pp-shot-badge {
+    position: absolute; top: 0; left: 0;
+    background: #0E0E0F; color: #F5F5F5;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 4px 9px;
+  }
+  .pp-meta-row {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+    color: #1A1612;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .pp-meta-row .sep { color: #B5A586; font-weight: 400; }
+  .pp-desc {
+    margin-top: 8px;
+    font-size: 11.5px; line-height: 1.75; color: #2A2218;
+    padding-bottom: 4px;
+    word-break: break-word;
+  }
+  .pp-dialogue {
+    margin-top: 10px;
+    font-size: 11px; line-height: 1.65; color: #4A4A4F;
+    font-style: italic;
+    border-left: 2px solid #707075; padding: 2px 0 4px 8px;
+  }
+  .pp-sfx {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9.5px; color: #5A5A5F; letter-spacing: 0.06em;
+    line-height: 1.6; padding-bottom: 4px;
+  }
+  /* compact mode for 4/6 per page */
+  .pp-shots.pp-4 .pp-desc, .pp-shots.pp-6 .pp-desc {
+    font-size: 10px; line-height: 1.6;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    padding-bottom: 2px;
+  }
+  .pp-shots.pp-6 .pp-dialogue, .pp-shots.pp-6 .pp-sfx { display: none; }
+  .pp-section-divider {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 14px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9.5px; letter-spacing: 0.18em; color: #4A4A4F; text-transform: uppercase;
+    margin: 6px 0 -6px 0;
+  }
+  .pp-section-divider .line { flex: 1; height: 1px; background: #B5B5BA; }
+
+  /* ============ 大小屏自适应 ============ */
+  /* 中等笔记本：藏掉顶栏中间的统计条，给导出按钮腾地方 */
+  @media (max-width: 1180px){
+    .scene-meta-bar{ display:none; }
+  }
+  @media (max-width: 1040px){
+    .panel-left{ width: 300px; }
+    .topbar{ gap: 10px; }
+  }
+  /* 小笔记本/平板：缩短面包屑、藏 DRAFT、导出按钮变图标 only */
+  @media (max-width: 880px){
+    .draft-pill{ display:none; }
+    .project-switcher .crumb-faint,
+    .project-switcher > svg:first-of-type{ display:none; }
+    .btn-export{ font-size:0; gap:0; padding:7px; }   /* 文字隐藏、图标保留 */
+    .btn-export svg{ opacity:1; }
+    .panel-left{ width: 264px; }
+  }
+  /* 竖屏/手机：左面板移到顶部，主区在下，整体竖排 */
+  @media (max-width: 760px){
+    .topbar{ padding-left:12px; padding-right:12px; gap:8px; }
+    .app-body{ flex-direction: column; }
+    .panel-left{
+      width: 100%; height: auto; max-height: 44vh;
+      border-right: none; border-bottom: 1px solid var(--border);
+      overflow-y: auto;
+    }
+    .storyboard-area{ flex: 1; }
+    .shot-row{ grid-template-columns: 44px 150px 1fr; gap: 14px; padding: 16px 16px; }
+    .shot-row .blocking-box, .shot-row .axis-marker{ display:none; }
+    .sheet-header{ flex-wrap: wrap; gap: 10px; }
+    .floorplan{ width: calc(100vw - 24px); }
+  }
+  @media (max-width: 560px){
+    .shot-row{ grid-template-columns: 1fr; gap: 12px; }
+    .shot-row .thumb{ width: 100%; max-width: 320px; }
+    .sheet-header h1{ font-size: 16px; }
+  }
+</style>
+</head>
+<body class="h-screen overflow-hidden">
+
+<!-- =================== TOPBAR =================== -->
+<header class="topbar flex items-center px-5 gap-4">
+  <!-- Logo: 三格分镜 F + wordmark -->
+  <div class="logo" onclick="toast('回到首页 (Demo)')" style="cursor: pointer;">
+    <div class="logo-mark">
+      <svg width="17" height="17" viewBox="0 0 24 24" aria-label="Frameline">
+        <rect x="5" y="4" width="14" height="4" rx="1"/>
+        <rect x="5" y="10" width="10" height="4" rx="1"/>
+        <rect x="5" y="16" width="4.5" height="4" rx="1"/>
+      </svg>
+    </div>
+    <div class="logo-wordmark">Frame<span class="accent">line</span></div>
+  </div>
+
+  <div class="topbar-sep"></div>
+
+  <!-- Project switcher / breadcrumb -->
+  <div class="project-switcher" onclick="toast('项目切换器 (Demo)')">
+    <span class="crumb-faint">Projects</span>
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--text-faint);"><path d="M9 18l6-6-6-6"/></svg>
+    <span class="crumb-name">Untitled Scene</span>
+    <svg class="chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </div>
+
+  <span class="draft-pill">DRAFT</span>
+
+  <!-- Center spacer -->
+  <div class="flex-1"></div>
+
+  <!-- Center scene meta -->
+  <div class="scene-meta-bar">
+    <span><span class="label">SHOTS</span> <span class="val">06</span></span>
+    <span style="color: var(--text-faint);">·</span>
+    <span><span class="label">DUR</span> <span class="val">0:24</span></span>
+    <span style="color: var(--text-faint);">·</span>
+    <span><span class="label">FPS</span> <span class="val">24</span></span>
+    <span style="color: var(--text-faint);">·</span>
+    <span><span class="save-dot"></span><span class="val">SAVED 2m AGO</span></span>
+  </div>
+
+  <div class="flex-1"></div>
+
+  <!-- Right actions -->
+  <div class="flex items-center gap-2">
+    <button class="btn-export" onclick="openExport('pdf')" title="导出 PDF 分镜本">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      PDF
+    </button>
+    <button class="btn-export" onclick="openExport('edl')" title="导出 EDL / FCPXML 进剪辑">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      EDL
+    </button>
+    <button class="btn-export btn-export-xlsx" onclick="openExport('xlsx')" title="导出 Excel 通告表（排通告 / 拍摄计划）">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M11 10v10" stroke-width="2"/></svg>
+      xlsx
+    </button>
+    <div class="topbar-sep mx-1"></div>
+    <div class="avatar" onclick="toast('账户菜单 (Demo)')" style="cursor: pointer;">ZG</div>
+  </div>
+</header>
+
+<div class="flex app-body" style="height: calc(100vh - 54px);">
+
+  <!-- =================== LEFT PANEL =================== -->
+  <aside class="panel-left flex flex-col">
+    <!-- Scene slug -->
+    <div class="px-5 pt-5 pb-4 border-b" style="border-color: var(--border);">
+      <div class="eyebrow mb-2.5">SCENE SLUG</div>
+      <input id="scene-slug" class="scene-slug-input" value="INT. 仓库 — 夜" />
+      <div class="mt-3 flex items-center gap-3 text-[11px]" style="color: var(--text-faint);">
+        <span class="mono" id="scene-no">SCENE 12</span>
+        <span>·</span>
+        <span id="scene-title">第三幕 · 对峙</span>
+      </div>
+    </div>
+
+    <!-- Script body -->
+    <div class="px-5 pt-5 pb-3 flex-1 flex flex-col reveal">
+      <div class="eyebrow mb-2.5">剧本</div>
+      <textarea class="script-textarea flex-1" placeholder="贴入剧本内容...">陈默推开锈蚀的卷帘门，铁链碰撞声在空旷的厂房里回荡。
+
+他站在门口，眼睛适应黑暗。月光从破碎的天窗洒下，把地面切成几何形状。
+
+仓库深处，一个轮椅的轮廓背对着他。
+
+林：「我等你很久了。」
+
+陈默握紧腰间的枪，向前一步。脚下的玻璃碎裂。</textarea>
+    </div>
+
+    <!-- CTA -->
+    <div class="px-5 pb-5 pt-2 reveal">
+      <button class="btn-primary" onclick="runBreakdown()" id="breakdown-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 3l14 9-14 9V3z"/></svg>
+        拆解为镜头
+      </button>
+      <p class="mt-3 text-[11px] leading-relaxed" style="color: var(--text-faint);">
+        AI 会基于剧本生成<span style="color: var(--text-dim);">镜号</span>、<span style="color: var(--text-dim);">景别</span>、<span style="color: var(--text-dim);">运镜</span>、<span style="color: var(--text-dim);">时长</span>建议。生成后可手动编辑、调整顺序或删除。
+      </p>
+    </div>
+
+    <!-- Bottom toolbar -->
+    <div class="px-5 py-3 border-t flex items-center justify-between text-[11px]" style="border-color: var(--border); color: var(--text-faint);">
+      <div class="flex items-center gap-2">
+        <span class="status-dot" style="background: var(--accent);"></span>
+        <span class="mono">AI READY</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="hover:text-white transition" onclick="openCast()">角色</button>
+        <button class="hover:text-white transition" onclick="openModal('settings-modal')">设置</button>
+        <button class="hover:text-white transition" onclick="openModal('history-modal')">历史</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =================== STORYBOARD AREA =================== -->
+  <main class="storyboard-area flex-1 flex flex-col">
+
+    <!-- Sheet header -->
+    <div class="sheet-header px-8 py-4 flex items-center gap-6">
+      <div>
+        <div class="eyebrow mb-1.5">STORYBOARD</div>
+        <h1 class="text-[20px] font-semibold tracking-tightest">仓库对峙 · Scene 12</h1>
+      </div>
+      <div class="flex-1"></div>
+      <div class="flex items-center gap-1.5">
+        <button class="btn-ghost" onclick="addShot()">+ 添加镜头</button>
+        <button class="btn-ghost" onclick="regenAll()">重新生成全部</button>
+      </div>
+      <div class="w-px h-6" style="background: var(--border);"></div>
+      <div class="flex items-center gap-1.5">
+        <button class="btn-ghost mono view-btn" id="view-list" data-view="list" style="font-size: 10.5px; letter-spacing: 0.08em;" onclick="setView('list')">LIST</button>
+        <button class="btn-ghost mono view-btn" id="view-grid" data-view="grid" style="font-size: 10.5px; letter-spacing: 0.08em; background: var(--surface-2);" onclick="setView('grid')">GRID</button>
+      </div>
+      <div class="w-px h-6" style="background: var(--border);"></div>
+      <button class="btn-ghost" id="floorplan-btn" onclick="openFloorplan()" style="display:flex; align-items:center; gap:7px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        调度图
+      </button>
+    </div>
+
+    <!-- =================== SCENE FLOOR PLAN (floating window) =================== -->
+    <div class="floorplan" id="floorplan">
+      <div class="floorplan-head" id="fpw-head">
+        <span class="fp-title">场景调度图</span>
+        <span class="fp-active-cap" id="fp-active-cap"></span>
+        <button class="fpw-close" onclick="closeFloorplan()" title="关闭">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="fp-body">
+        <svg class="fp-canvas" width="860" height="480" viewBox="0 0 860 480" xmlns="http://www.w3.org/2000/svg" font-family="'Inter','PingFang SC',system-ui,sans-serif">
+          <defs>
+            <pattern id="fpgrid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M40 0 H0 V40" fill="none" stroke="#DBE2E8" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <!-- blueprint background -->
+          <rect x="0" y="0" width="860" height="480" fill="#ECF0F4"/>
+          <rect x="0" y="0" width="860" height="480" fill="url(#fpgrid)"/>
+
+          <!-- 仓库墙体（左墙留卷帘门口） -->
+          <g stroke="#B7BFC7" stroke-width="7" stroke-linecap="butt">
+            <line x1="150" y1="70" x2="760" y2="70"/>
+            <line x1="760" y1="70" x2="760" y2="430"/>
+            <line x1="150" y1="430" x2="760" y2="430"/>
+            <line x1="150" y1="70" x2="150" y2="298"/>
+            <line x1="150" y1="366" x2="150" y2="430"/>
+          </g>
+          <!-- 卷帘门（门口） -->
+          <g stroke="#9AA2AA" stroke-width="1.5">
+            <line x1="150" y1="306" x2="150" y2="358"/>
+            <line x1="156" y1="306" x2="156" y2="358"/>
+            <line x1="162" y1="306" x2="162" y2="358"/>
+          </g>
+          <text x="124" y="336" text-anchor="middle" font-size="11" fill="#6B7178" transform="rotate(-90 124 336)">门</text>
+
+          <!-- 指南针 -->
+          <g transform="translate(74,64)">
+            <circle r="22" fill="#FFFFFF" stroke="#C2CAD1" stroke-width="1.5"/>
+            <text x="0" y="-7" text-anchor="middle" font-size="11" font-weight="700" fill="#C2563A">N</text>
+            <polygon points="0,2 5,12 -5,12" fill="#AEB6BE"/>
+          </g>
+
+          <!-- 轴线（动态：连接两个主要人物） -->
+          <g id="fp-axis"></g>
+          <!-- 摄影机层（按所选镜头动态渲染，画在演员之下，让光锥不挡人物） -->
+          <g id="fp-cam-layer"></g>
+          <!-- 演员层（动态：按拆解出的人物位置渲染） -->
+          <g id="fp-actors"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Section A divider -->
+    <div class="sheet-divider reveal">
+      <span class="divider-tag">A · 进入仓库</span>
+      <div class="divider-line"></div>
+      <span class="divider-tag" style="color: var(--text-faint);">3 SHOTS · 0:12</span>
+    </div>
+
+    <!-- ============ SHOT 01 — GENERATED ============ -->
+    <div class="shot-row reveal" data-shot="1">
+      <div class="row-toolbar">
+        <button onclick="toast('已复制 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="复制">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button onclick="toast('已删除 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="删除">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+        </button>
+      </div>
+      <!-- Shot # -->
+      <div>
+        <div class="shot-num-big mono">01</div>
+        <div class="shot-num-label">SH</div>
+      </div>
+
+      <!-- Thumbnail with generated lineart -->
+      <div>
+        <div class="thumb" onclick="openLightbox(1)"><img src="shots/sh01.png" alt="SH 01" /></div>
+        <div class="mt-2 flex items-center gap-2 text-[10.5px] mono" style="color: var(--text-faint); letter-spacing: 0.06em;">
+          <span class="status-dot" style="background: var(--accent);"></span>
+          <span style="color: var(--text-dim);">GENERATED · v1</span>
+          <span class="ml-auto cursor-pointer hover:text-white transition" onclick="regen(event)">↻ 重画</span>
+        </div>
+      </div>
+
+      <!-- Middle: chips + desc + dialogue -->
+      <div class="flex flex-col gap-3 min-w-0">
+        <!-- Chips row -->
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="chip-label">SHOT</span><span class="chip-wrap"><span class="chip" data-group="shot" onclick="toggleChipMenu(event,this)">WIDE</span><span class="chip-menu"><div class="chip-menu-item selected" data-val="WIDE">WIDE</div><div class="chip-menu-item" data-val="MED">MED</div><div class="chip-menu-item" data-val="CU">CU</div><div class="chip-menu-item" data-val="ECU">ECU</div><div class="chip-menu-item" data-val="OTS">OTS</div><div class="chip-menu-item" data-val="OTS · REV">OTS · REV</div><div class="chip-menu-item" data-val="EWS">EWS</div><div class="chip-menu-item" data-val="MCU">MCU</div><div class="chip-menu-item" data-val="POV">POV</div></span></span><span class="chip-wrap"><span class="chip" data-group="move" onclick="toggleChipMenu(event,this)">STATIC</span><span class="chip-menu"><div class="chip-menu-item selected" data-val="STATIC">STATIC</div><div class="chip-menu-item" data-val="DOLLY IN">DOLLY IN</div><div class="chip-menu-item" data-val="DOLLY OUT">DOLLY OUT</div><div class="chip-menu-item" data-val="PAN L">PAN L</div><div class="chip-menu-item" data-val="PAN R">PAN R</div><div class="chip-menu-item" data-val="TILT UP">TILT UP</div><div class="chip-menu-item" data-val="TILT DOWN">TILT DOWN</div><div class="chip-menu-item" data-val="TRUCK L">TRUCK L</div><div class="chip-menu-item" data-val="TRUCK R">TRUCK R</div><div class="chip-menu-item" data-val="HANDHELD">HANDHELD</div><div class="chip-menu-item" data-val="SLOW PUSH">SLOW PUSH</div><div class="chip-menu-item" data-val="CRANE">CRANE</div><div class="chip-menu-item" data-val="ZOOM IN">ZOOM IN</div><div class="chip-menu-item" data-val="ZOOM OUT">ZOOM OUT</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">LENS</span><span class="chip-wrap"><span class="chip" data-group="lens" onclick="toggleChipMenu(event,this)">24mm</span><span class="chip-menu"><div class="chip-menu-item" data-val="18mm">18mm</div><div class="chip-menu-item selected" data-val="24mm">24mm</div><div class="chip-menu-item" data-val="35mm">35mm</div><div class="chip-menu-item" data-val="50mm">50mm</div><div class="chip-menu-item" data-val="85mm">85mm</div><div class="chip-menu-item" data-val="100mm">100mm</div><div class="chip-menu-item" data-val="135mm">135mm</div><div class="chip-menu-item" data-val="200mm">200mm</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">DUR</span>
+          <span class="duration">0:04</span>
+        </div>
+        <!-- Description -->
+        <div class="desc">
+          全景。陈默推开锈蚀的卷帘门，铁链与地面摩擦发出长长的金属嘶鸣。逆光中只有他的剪影，月光从破碎天窗倾泻而下，把空旷厂房切成几何光块。
+        </div>
+        <!-- SFX -->
+        <div class="flex flex-wrap gap-1.5">
+          <span class="sfx-tag">SFX · 卷帘门铁链</span>
+          <span class="sfx-tag">SFX · 远处低频嗡鸣</span>
+        </div>
+      </div>
+
+      <!-- Right: axis / setup marker -->
+      <div class="axis-marker" data-axis="1"></div>
+    </div>
+
+    <!-- ============ SHOT 02 — EMPTY ============ -->
+    <div class="shot-row reveal" data-shot="2">
+      <div class="row-toolbar">
+        <button onclick="toast('已复制 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="复制">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button onclick="toast('已删除 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="删除">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+        </button>
+      </div>
+      <div>
+        <div class="shot-num-big mono">02</div>
+        <div class="shot-num-label">SH</div>
+      </div>
+
+      <div>
+        <div class="thumb" onclick="openLightbox(2)"><img src="shots/sh02.png" alt="SH 02" /></div>
+        <div class="mt-2 flex items-center gap-2 text-[10.5px] mono" style="color: var(--text-faint); letter-spacing: 0.06em;">
+          <span class="status-dot" style="background: var(--accent);"></span>
+          <span style="color: var(--text-dim);">GENERATED · v1</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="chip-label">SHOT</span><span class="chip-wrap"><span class="chip" data-group="shot" onclick="toggleChipMenu(event,this)">MED</span><span class="chip-menu"><div class="chip-menu-item" data-val="WIDE">WIDE</div><div class="chip-menu-item selected" data-val="MED">MED</div><div class="chip-menu-item" data-val="CU">CU</div><div class="chip-menu-item" data-val="ECU">ECU</div><div class="chip-menu-item" data-val="OTS">OTS</div><div class="chip-menu-item" data-val="OTS · REV">OTS · REV</div><div class="chip-menu-item" data-val="EWS">EWS</div><div class="chip-menu-item" data-val="MCU">MCU</div><div class="chip-menu-item" data-val="POV">POV</div></span></span><span class="chip-wrap"><span class="chip" data-group="move" onclick="toggleChipMenu(event,this)">DOLLY IN</span><span class="chip-menu"><div class="chip-menu-item" data-val="STATIC">STATIC</div><div class="chip-menu-item selected" data-val="DOLLY IN">DOLLY IN</div><div class="chip-menu-item" data-val="DOLLY OUT">DOLLY OUT</div><div class="chip-menu-item" data-val="PAN L">PAN L</div><div class="chip-menu-item" data-val="PAN R">PAN R</div><div class="chip-menu-item" data-val="TILT UP">TILT UP</div><div class="chip-menu-item" data-val="TILT DOWN">TILT DOWN</div><div class="chip-menu-item" data-val="TRUCK L">TRUCK L</div><div class="chip-menu-item" data-val="TRUCK R">TRUCK R</div><div class="chip-menu-item" data-val="HANDHELD">HANDHELD</div><div class="chip-menu-item" data-val="SLOW PUSH">SLOW PUSH</div><div class="chip-menu-item" data-val="CRANE">CRANE</div><div class="chip-menu-item" data-val="ZOOM IN">ZOOM IN</div><div class="chip-menu-item" data-val="ZOOM OUT">ZOOM OUT</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">LENS</span><span class="chip-wrap"><span class="chip" data-group="lens" onclick="toggleChipMenu(event,this)">35mm</span><span class="chip-menu"><div class="chip-menu-item" data-val="18mm">18mm</div><div class="chip-menu-item" data-val="24mm">24mm</div><div class="chip-menu-item selected" data-val="35mm">35mm</div><div class="chip-menu-item" data-val="50mm">50mm</div><div class="chip-menu-item" data-val="85mm">85mm</div><div class="chip-menu-item" data-val="100mm">100mm</div><div class="chip-menu-item" data-val="135mm">135mm</div><div class="chip-menu-item" data-val="200mm">200mm</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">DUR</span>
+          <span class="duration">0:03</span>
+        </div>
+        <div class="desc">
+          中景。镜头从陈默身后跟随，缓慢向前推。他的肩膀逐渐占满画面右侧，左侧露出仓库深处的轮椅轮廓。
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="sfx-tag">SFX · 脚步 玻璃碎裂</span>
+        </div>
+      </div>
+
+      <div class="axis-marker" data-axis="2"></div>
+    </div>
+
+    <!-- ============ SHOT 03 — EMPTY ============ -->
+    <div class="shot-row reveal" data-shot="3">
+      <div class="row-toolbar">
+        <button onclick="toast('已复制 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="复制">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button onclick="toast('已删除 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="删除">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+        </button>
+      </div>
+      <div>
+        <div class="shot-num-big mono">03</div>
+        <div class="shot-num-label">SH</div>
+      </div>
+
+      <div>
+        <div class="thumb" onclick="openLightbox(3)"><img src="shots/sh03.png" alt="SH 03" /></div>
+        <div class="mt-2 flex items-center gap-2 text-[10.5px] mono" style="color: var(--text-faint); letter-spacing: 0.06em;">
+          <span class="status-dot" style="background: var(--accent);"></span>
+          <span style="color: var(--text-dim);">GENERATED · v1</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="chip-label">SHOT</span><span class="chip-wrap"><span class="chip" data-group="shot" onclick="toggleChipMenu(event,this)">CU</span><span class="chip-menu"><div class="chip-menu-item" data-val="WIDE">WIDE</div><div class="chip-menu-item" data-val="MED">MED</div><div class="chip-menu-item selected" data-val="CU">CU</div><div class="chip-menu-item" data-val="ECU">ECU</div><div class="chip-menu-item" data-val="OTS">OTS</div><div class="chip-menu-item" data-val="OTS · REV">OTS · REV</div><div class="chip-menu-item" data-val="EWS">EWS</div><div class="chip-menu-item" data-val="MCU">MCU</div><div class="chip-menu-item" data-val="POV">POV</div></span></span><span class="chip-wrap"><span class="chip" data-group="move" onclick="toggleChipMenu(event,this)">STATIC</span><span class="chip-menu"><div class="chip-menu-item selected" data-val="STATIC">STATIC</div><div class="chip-menu-item" data-val="DOLLY IN">DOLLY IN</div><div class="chip-menu-item" data-val="DOLLY OUT">DOLLY OUT</div><div class="chip-menu-item" data-val="PAN L">PAN L</div><div class="chip-menu-item" data-val="PAN R">PAN R</div><div class="chip-menu-item" data-val="TILT UP">TILT UP</div><div class="chip-menu-item" data-val="TILT DOWN">TILT DOWN</div><div class="chip-menu-item" data-val="TRUCK L">TRUCK L</div><div class="chip-menu-item" data-val="TRUCK R">TRUCK R</div><div class="chip-menu-item" data-val="HANDHELD">HANDHELD</div><div class="chip-menu-item" data-val="SLOW PUSH">SLOW PUSH</div><div class="chip-menu-item" data-val="CRANE">CRANE</div><div class="chip-menu-item" data-val="ZOOM IN">ZOOM IN</div><div class="chip-menu-item" data-val="ZOOM OUT">ZOOM OUT</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">LENS</span><span class="chip-wrap"><span class="chip" data-group="lens" onclick="toggleChipMenu(event,this)">85mm</span><span class="chip-menu"><div class="chip-menu-item" data-val="18mm">18mm</div><div class="chip-menu-item" data-val="24mm">24mm</div><div class="chip-menu-item" data-val="35mm">35mm</div><div class="chip-menu-item" data-val="50mm">50mm</div><div class="chip-menu-item selected" data-val="85mm">85mm</div><div class="chip-menu-item" data-val="100mm">100mm</div><div class="chip-menu-item" data-val="135mm">135mm</div><div class="chip-menu-item" data-val="200mm">200mm</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">DUR</span>
+          <span class="duration">0:05</span>
+        </div>
+        <div class="desc">
+          特写。陈默的眼睛在月光中眯起。瞳孔反射出仓库深处那个轮椅的轮廓。一滴汗从太阳穴滑下。
+        </div>
+        <div class="dialogue">
+          「我等你很久了。」 — 林（画外）
+        </div>
+      </div>
+
+      <div class="axis-marker" data-axis="3"></div>
+    </div>
+
+    <!-- Section B divider -->
+    <div class="sheet-divider reveal">
+      <span class="divider-tag">B · 对峙</span>
+      <div class="divider-line"></div>
+      <span class="divider-tag" style="color: var(--text-faint);">3 SHOTS · 0:12</span>
+    </div>
+
+    <!-- ============ SHOT 04 — EMPTY ============ -->
+    <div class="shot-row reveal" data-shot="4">
+      <div class="row-toolbar">
+        <button onclick="toast('已复制 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="复制">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button onclick="toast('已删除 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="删除">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+        </button>
+      </div>
+      <div>
+        <div class="shot-num-big mono">04</div>
+        <div class="shot-num-label">SH</div>
+      </div>
+
+      <div>
+        <div class="thumb" onclick="openLightbox(4)"><img src="shots/sh04.png" alt="SH 04" /></div>
+        <div class="mt-2 flex items-center gap-2 text-[10.5px] mono" style="color: var(--text-faint); letter-spacing: 0.06em;">
+          <span class="status-dot" style="background: var(--accent);"></span>
+          <span style="color: var(--text-dim);">GENERATED · v1</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="chip-label">SHOT</span><span class="chip-wrap"><span class="chip" data-group="shot" onclick="toggleChipMenu(event,this)">OTS</span><span class="chip-menu"><div class="chip-menu-item" data-val="WIDE">WIDE</div><div class="chip-menu-item" data-val="MED">MED</div><div class="chip-menu-item" data-val="CU">CU</div><div class="chip-menu-item" data-val="ECU">ECU</div><div class="chip-menu-item selected" data-val="OTS">OTS</div><div class="chip-menu-item" data-val="OTS · REV">OTS · REV</div><div class="chip-menu-item" data-val="EWS">EWS</div><div class="chip-menu-item" data-val="MCU">MCU</div><div class="chip-menu-item" data-val="POV">POV</div></span></span><span class="chip-wrap"><span class="chip" data-group="move" onclick="toggleChipMenu(event,this)">HANDHELD</span><span class="chip-menu"><div class="chip-menu-item" data-val="STATIC">STATIC</div><div class="chip-menu-item" data-val="DOLLY IN">DOLLY IN</div><div class="chip-menu-item" data-val="DOLLY OUT">DOLLY OUT</div><div class="chip-menu-item" data-val="PAN L">PAN L</div><div class="chip-menu-item" data-val="PAN R">PAN R</div><div class="chip-menu-item" data-val="TILT UP">TILT UP</div><div class="chip-menu-item" data-val="TILT DOWN">TILT DOWN</div><div class="chip-menu-item" data-val="TRUCK L">TRUCK L</div><div class="chip-menu-item" data-val="TRUCK R">TRUCK R</div><div class="chip-menu-item selected" data-val="HANDHELD">HANDHELD</div><div class="chip-menu-item" data-val="SLOW PUSH">SLOW PUSH</div><div class="chip-menu-item" data-val="CRANE">CRANE</div><div class="chip-menu-item" data-val="ZOOM IN">ZOOM IN</div><div class="chip-menu-item" data-val="ZOOM OUT">ZOOM OUT</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">LENS</span><span class="chip-wrap"><span class="chip" data-group="lens" onclick="toggleChipMenu(event,this)">50mm</span><span class="chip-menu"><div class="chip-menu-item" data-val="18mm">18mm</div><div class="chip-menu-item" data-val="24mm">24mm</div><div class="chip-menu-item" data-val="35mm">35mm</div><div class="chip-menu-item selected" data-val="50mm">50mm</div><div class="chip-menu-item" data-val="85mm">85mm</div><div class="chip-menu-item" data-val="100mm">100mm</div><div class="chip-menu-item" data-val="135mm">135mm</div><div class="chip-menu-item" data-val="200mm">200mm</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">DUR</span>
+          <span class="duration">0:04</span>
+        </div>
+        <div class="desc">
+          过肩。从陈默右肩越过，看向仓库深处。轮椅缓慢转过来，但只露出半张脸，另一半隐没在阴影里。
+        </div>
+        <div class="dialogue">
+          「枪放下。我们好好聊。」 — 林
+        </div>
+      </div>
+
+      <div class="axis-marker" data-axis="4"></div>
+    </div>
+
+    <!-- ============ SHOT 05 — EMPTY ============ -->
+    <div class="shot-row reveal" data-shot="5">
+      <div class="row-toolbar">
+        <button onclick="toast('已复制 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="复制">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button onclick="toast('已删除 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="删除">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+        </button>
+      </div>
+      <div>
+        <div class="shot-num-big mono">05</div>
+        <div class="shot-num-label">SH</div>
+      </div>
+
+      <div>
+        <div class="thumb" onclick="openLightbox(5)"><img src="shots/sh05.png" alt="SH 05" /></div>
+        <div class="mt-2 flex items-center gap-2 text-[10.5px] mono" style="color: var(--text-faint); letter-spacing: 0.06em;">
+          <span class="status-dot" style="background: var(--accent);"></span>
+          <span style="color: var(--text-dim);">GENERATED · v1</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="chip-label">SHOT</span><span class="chip-wrap"><span class="chip" data-group="shot" onclick="toggleChipMenu(event,this)">OTS · REV</span><span class="chip-menu"><div class="chip-menu-item" data-val="WIDE">WIDE</div><div class="chip-menu-item" data-val="MED">MED</div><div class="chip-menu-item" data-val="CU">CU</div><div class="chip-menu-item" data-val="ECU">ECU</div><div class="chip-menu-item" data-val="OTS">OTS</div><div class="chip-menu-item selected" data-val="OTS · REV">OTS · REV</div><div class="chip-menu-item" data-val="EWS">EWS</div><div class="chip-menu-item" data-val="MCU">MCU</div><div class="chip-menu-item" data-val="POV">POV</div></span></span><span class="chip-wrap"><span class="chip" data-group="move" onclick="toggleChipMenu(event,this)">STATIC</span><span class="chip-menu"><div class="chip-menu-item selected" data-val="STATIC">STATIC</div><div class="chip-menu-item" data-val="DOLLY IN">DOLLY IN</div><div class="chip-menu-item" data-val="DOLLY OUT">DOLLY OUT</div><div class="chip-menu-item" data-val="PAN L">PAN L</div><div class="chip-menu-item" data-val="PAN R">PAN R</div><div class="chip-menu-item" data-val="TILT UP">TILT UP</div><div class="chip-menu-item" data-val="TILT DOWN">TILT DOWN</div><div class="chip-menu-item" data-val="TRUCK L">TRUCK L</div><div class="chip-menu-item" data-val="TRUCK R">TRUCK R</div><div class="chip-menu-item" data-val="HANDHELD">HANDHELD</div><div class="chip-menu-item" data-val="SLOW PUSH">SLOW PUSH</div><div class="chip-menu-item" data-val="CRANE">CRANE</div><div class="chip-menu-item" data-val="ZOOM IN">ZOOM IN</div><div class="chip-menu-item" data-val="ZOOM OUT">ZOOM OUT</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">LENS</span><span class="chip-wrap"><span class="chip" data-group="lens" onclick="toggleChipMenu(event,this)">50mm</span><span class="chip-menu"><div class="chip-menu-item" data-val="18mm">18mm</div><div class="chip-menu-item" data-val="24mm">24mm</div><div class="chip-menu-item" data-val="35mm">35mm</div><div class="chip-menu-item selected" data-val="50mm">50mm</div><div class="chip-menu-item" data-val="85mm">85mm</div><div class="chip-menu-item" data-val="100mm">100mm</div><div class="chip-menu-item" data-val="135mm">135mm</div><div class="chip-menu-item" data-val="200mm">200mm</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">DUR</span>
+          <span class="duration">0:03</span>
+        </div>
+        <div class="desc">
+          反打过肩。从林的左肩越过，看向陈默。陈默握枪的手在颤抖，他的眼神在判断。
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="sfx-tag">SFX · 远处汽笛</span>
+        </div>
+      </div>
+
+      <div class="axis-marker" data-axis="5"></div>
+    </div>
+
+    <!-- ============ SHOT 06 — EMPTY ============ -->
+    <div class="shot-row reveal" data-shot="6">
+      <div class="row-toolbar">
+        <button onclick="toast('已复制 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="复制">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button onclick="toast('已删除 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="删除">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+        </button>
+      </div>
+      <div>
+        <div class="shot-num-big mono">06</div>
+        <div class="shot-num-label">SH</div>
+      </div>
+
+      <div>
+        <div class="thumb" onclick="openLightbox(6)"><img src="shots/sh06.png" alt="SH 06" /></div>
+        <div class="mt-2 flex items-center gap-2 text-[10.5px] mono" style="color: var(--text-faint); letter-spacing: 0.06em;">
+          <span class="status-dot" style="background: var(--accent);"></span>
+          <span style="color: var(--text-dim);">GENERATED · v1</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="chip-label">SHOT</span><span class="chip-wrap"><span class="chip" data-group="shot" onclick="toggleChipMenu(event,this)">ECU</span><span class="chip-menu"><div class="chip-menu-item" data-val="WIDE">WIDE</div><div class="chip-menu-item" data-val="MED">MED</div><div class="chip-menu-item" data-val="CU">CU</div><div class="chip-menu-item selected" data-val="ECU">ECU</div><div class="chip-menu-item" data-val="OTS">OTS</div><div class="chip-menu-item" data-val="OTS · REV">OTS · REV</div><div class="chip-menu-item" data-val="EWS">EWS</div><div class="chip-menu-item" data-val="MCU">MCU</div><div class="chip-menu-item" data-val="POV">POV</div></span></span><span class="chip-wrap"><span class="chip" data-group="move" onclick="toggleChipMenu(event,this)">SLOW PUSH</span><span class="chip-menu"><div class="chip-menu-item" data-val="STATIC">STATIC</div><div class="chip-menu-item" data-val="DOLLY IN">DOLLY IN</div><div class="chip-menu-item" data-val="DOLLY OUT">DOLLY OUT</div><div class="chip-menu-item" data-val="PAN L">PAN L</div><div class="chip-menu-item" data-val="PAN R">PAN R</div><div class="chip-menu-item" data-val="TILT UP">TILT UP</div><div class="chip-menu-item" data-val="TILT DOWN">TILT DOWN</div><div class="chip-menu-item" data-val="TRUCK L">TRUCK L</div><div class="chip-menu-item" data-val="TRUCK R">TRUCK R</div><div class="chip-menu-item" data-val="HANDHELD">HANDHELD</div><div class="chip-menu-item selected" data-val="SLOW PUSH">SLOW PUSH</div><div class="chip-menu-item" data-val="CRANE">CRANE</div><div class="chip-menu-item" data-val="ZOOM IN">ZOOM IN</div><div class="chip-menu-item" data-val="ZOOM OUT">ZOOM OUT</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">LENS</span><span class="chip-wrap"><span class="chip" data-group="lens" onclick="toggleChipMenu(event,this)">100mm</span><span class="chip-menu"><div class="chip-menu-item" data-val="18mm">18mm</div><div class="chip-menu-item" data-val="24mm">24mm</div><div class="chip-menu-item" data-val="35mm">35mm</div><div class="chip-menu-item" data-val="50mm">50mm</div><div class="chip-menu-item" data-val="85mm">85mm</div><div class="chip-menu-item selected" data-val="100mm">100mm</div><div class="chip-menu-item" data-val="135mm">135mm</div><div class="chip-menu-item" data-val="200mm">200mm</div></span></span>
+          <span class="chip-label" style="margin-left: 10px;">DUR</span>
+          <span class="duration">0:05</span>
+        </div>
+        <div class="desc">
+          大特写。陈默握枪手指扣在扳机上的瞬间，关节发白。镜头极慢推进。背景虚化，只剩下他指节的纹路。
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="sfx-tag">MUSIC · 弦乐 渐起</span>
+          <span class="sfx-tag">SFX · 心跳</span>
+        </div>
+      </div>
+
+      <div class="axis-marker" data-axis="6"></div>
+    </div>
+
+    <!-- End divider -->
+    <div class="sheet-divider reveal" style="border-bottom: none;">
+      <span class="divider-tag" style="color: var(--text-faint);">— END OF SCENE 12 —</span>
+      <div class="divider-line"></div>
+      <button class="btn-ghost" onclick="toast('已新增段落 C')">+ 新增段落</button>
+    </div>
+
+    <div class="h-20"></div>
+  </main>
+</div>
+
+<!-- =================== Toast Stack =================== -->
+<div id="toast-stack"></div>
+
+<!-- =================== Hidden Print Root (PDF rendering source) =================== -->
+<div id="print-root"></div>
+
+<!-- =================== Export Modal =================== -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal modal-section">
+    <button class="modal-close" onclick="closeModal('export-modal')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="modal-title">导出分镜</div>
+    <div class="modal-tabs" id="export-tabs">
+      <div class="modal-tab active" data-fmt="pdf">PDF</div>
+      <div class="modal-tab" data-fmt="xlsx">Excel 通告</div>
+      <div class="modal-tab" data-fmt="edl">EDL</div>
+      <div class="modal-tab" data-fmt="fcpxml">FCPXML</div>
+    </div>
+    <div class="modal-summary">
+      <span>包含 <span class="mono">6</span> 个镜头 · 总时长 <span class="mono">0:24</span></span>
+      <span class="mono" id="export-fmt-label">PDF</span>
+    </div>
+    <div class="modal-field">
+      <label>文件名</label>
+      <input type="text" id="export-filename" value="Scene 12 - 仓库对峙" />
+    </div>
+    <div class="modal-field" id="export-perpage-field">
+      <label>每页镜头数</label>
+      <select id="export-per-page">
+        <option>1 (大图)</option>
+        <option selected>2</option>
+        <option>4 (标准)</option>
+        <option>6 (紧凑)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-secondary" onclick="closeModal('export-modal')">取消</button>
+      <button class="modal-btn-primary" onclick="doExport()">导出</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== Settings Modal =================== -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal modal-section">
+    <button class="modal-close" onclick="closeModal('settings-modal')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="modal-title">项目设置</div>
+    <div style="height: 12px;"></div>
+    <div class="modal-field">
+      <label>分镜风格</label>
+      <select>
+        <option>黑白手绘 · 工业级</option>
+        <option>温润手绘 · 速写</option>
+        <option>冷峻极简 · 线稿</option>
+        <option>广告 · 彩铅淡彩</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>默认画幅</label>
+      <select>
+        <option>16:9 (电影)</option>
+        <option>2.39:1 (宽银幕)</option>
+        <option>4:3 (经典)</option>
+        <option>9:16 (短视频)</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>AI 模型</label>
+      <select>
+        <option>GPT-Image v2 · 推荐</option>
+        <option>Flux Pro</option>
+        <option>Midjourney v6</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-secondary" onclick="closeModal('settings-modal')">取消</button>
+      <button class="modal-btn-primary" onclick="closeModal('settings-modal'); toast('设置已保存', 'success')">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== History Modal =================== -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal modal-section">
+    <button class="modal-close" onclick="closeModal('history-modal')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="modal-title">版本历史</div>
+    <div style="height: 12px;"></div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border-left: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 13px; font-weight: 500;">v6 · 当前</div>
+          <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;" class="mono">2 分钟前 · 6 SHOTS</div>
+        </div>
+        <span class="status-dot" style="background: var(--accent);"></span>
+      </div>
+      <div style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toast('已切换到 v5')">
+        <div>
+          <div style="font-size: 13px;">v5</div>
+          <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;" class="mono">14 分钟前 · 6 SHOTS</div>
+        </div>
+        <button class="modal-btn-secondary" style="padding: 4px 10px; font-size: 11px;">恢复</button>
+      </div>
+      <div style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toast('已切换到 v4')">
+        <div>
+          <div style="font-size: 13px;">v4</div>
+          <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;" class="mono">1 小时前 · 5 SHOTS</div>
+        </div>
+        <button class="modal-btn-secondary" style="padding: 4px 10px; font-size: 11px;">恢复</button>
+      </div>
+      <div style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toast('已切换到 v3')">
+        <div>
+          <div style="font-size: 13px;">v3</div>
+          <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;" class="mono">3 小时前 · 4 SHOTS</div>
+        </div>
+        <button class="modal-btn-secondary" style="padding: 4px 10px; font-size: 11px;">恢复</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== Cast / 角色资产 Modal =================== -->
+<div class="modal-overlay" id="cast-modal">
+  <div class="modal modal-section" style="width: 540px;">
+    <button class="modal-close" onclick="closeModal('cast-modal')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="modal-title">角色资产 · 一致性参考</div>
+    <p style="margin-top:8px; font-size:12.5px; color:var(--text-dim); line-height:1.6;">
+      给每个角色定一张参考图，之后所有分镜都会照着它画，保持同一个人。也可以不管 —— 某角色第一次出图后会<b style="color:var(--text)">自动锚定</b>为参考。
+    </p>
+    <div id="cast-list" style="margin-top:18px; display:flex; flex-direction:column; gap:10px;"></div>
+    <div class="modal-actions">
+      <button class="modal-btn-secondary" onclick="closeModal('cast-modal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== Lightbox =================== -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <img id="lightbox-img" src="" alt="" />
+  <div class="lightbox-meta" id="lightbox-meta"></div>
+</div>
+
+<!-- =================== Loading Overlay =================== -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">AI 正在分析剧本...</div>
+  <div class="loading-progress"><div class="loading-progress-bar" id="loading-bar"></div></div>
+</div>
+
+<script>
+  // Lenis 平滑滚动（作用于主区滚动容器）
+  const lenis = new Lenis({
+    wrapper: document.querySelector('.storyboard-area'),
+    content: document.querySelector('.storyboard-area'),
+    duration: 1.1,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+  });
+  function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+  requestAnimationFrame(raf);
+
+  // GSAP 入场动效
+  gsap.registerPlugin(ScrollTrigger);
+  ScrollTrigger.defaults({ scroller: document.querySelector('.storyboard-area') });
+
+  // 初次加载：左侧 + 第一个镜头错峰淡入
+  gsap.to('.reveal', {
+    opacity: 1,
+    y: 0,
+    duration: 0.7,
+    ease: 'power2.out',
+    stagger: 0.08,
+  });
+
+  /* ============ Interaction Logic ============ */
+
+  // ----- Toast -----
+  function toast(msg, kind) {
+    const stack = document.getElementById('toast-stack');
+    const el = document.createElement('div');
+    el.className = 'toast' + (kind === 'success' ? ' success' : '');
+    el.innerHTML = `<span class="dot"></span><span>${msg}</span>`;
+    stack.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('leaving');
+      setTimeout(() => el.remove(), 250);
+    }, 2200);
+  }
+
+  // ----- Modal -----
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  // Click overlay closes
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+  // ESC closes
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(o => o.classList.remove('open'));
+      closeLightbox();
+      if (typeof closeFloorplan === 'function') closeFloorplan();
+    }
+  });
+
+  // ----- Export Modal -----
+  function openExport(fmt) {
+    openModal('export-modal');
+    setExportTab(fmt);
+  }
+  function setExportTab(fmt) {
+    document.querySelectorAll('#export-tabs .modal-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.fmt === fmt);
+    });
+    const labels = { pdf: 'PDF', xlsx: 'Excel 通告表', edl: 'EDL', fcpxml: 'FCPXML' };
+    document.getElementById('export-fmt-label').textContent = labels[fmt];
+    // 「每页镜头数」只对 PDF 有意义，其余格式隐藏
+    const pp = document.getElementById('export-perpage-field');
+    if (pp) pp.style.display = (fmt === 'pdf') ? '' : 'none';
+  }
+  document.querySelectorAll('#export-tabs .modal-tab').forEach(t => {
+    t.addEventListener('click', () => setExportTab(t.dataset.fmt));
+  });
+  // ----- Shot data (single source of truth for exports) -----
+  const SCENE_META = {
+    title: '仓库对峙 · Scene 12',
+    slug: 'INT. 仓库 — 夜',
+    project: 'Untitled Scene',
+    fps: 24,
+  };
+  const SHOTS = [
+    { id: 1, shotType: 'WIDE', move: 'STATIC', lens: '24mm', durSec: 4,
+      desc: '全景。陈默推开锈蚀的卷帘门，铁链与地面摩擦发出长长的金属嘶鸣。逆光中只有他的剪影，月光从破碎天窗倾泻而下，把空旷厂房切成几何光块。',
+      dialogue: '', sfx: ['卷帘门铁链', '远处低频嗡鸣'], section: 'A · 进入仓库' },
+    { id: 2, shotType: 'MED', move: 'DOLLY IN', lens: '35mm', durSec: 3,
+      desc: '中景。镜头从陈默身后跟随，缓慢向前推。他的肩膀逐渐占满画面右侧，左侧露出仓库深处的轮椅轮廓。',
+      dialogue: '', sfx: ['脚步 玻璃碎裂'], section: 'A · 进入仓库' },
+    { id: 3, shotType: 'CU', move: 'STATIC', lens: '85mm', durSec: 5,
+      desc: '特写。陈默的眼睛在月光中眯起。瞳孔反射出仓库深处那个轮椅的轮廓。一滴汗从太阳穴滑下。',
+      dialogue: '「我等你很久了。」 — 林（画外）', sfx: [], section: 'A · 进入仓库' },
+    { id: 4, shotType: 'OTS', move: 'HANDHELD', lens: '50mm', durSec: 4,
+      desc: '过肩。从陈默右肩越过，看向仓库深处。轮椅缓慢转过来，但只露出半张脸，另一半隐没在阴影里。',
+      dialogue: '「枪放下。我们好好聊。」 — 林', sfx: [], section: 'B · 对峙' },
+    { id: 5, shotType: 'OTS · REV', move: 'STATIC', lens: '50mm', durSec: 3,
+      desc: '反打过肩。从林的左肩越过，看向陈默。陈默握枪的手在颤抖，他的眼神在判断。',
+      dialogue: '', sfx: ['远处汽笛'], section: 'B · 对峙' },
+    { id: 6, shotType: 'ECU', move: 'SLOW PUSH', lens: '100mm', durSec: 5,
+      desc: '大特写。陈默握枪手指扣在扳机上的瞬间，关节发白。镜头极慢推进。背景虚化，只剩下他指节的纹路。',
+      dialogue: '', sfx: ['弦乐 渐起', '心跳'], section: 'B · 对峙' },
+  ];
+
+  // ----- Helpers -----
+  function fmtDur(sec) {
+    const m = Math.floor(sec / 60); const s = sec % 60;
+    return `${m}:${String(s).padStart(2,'0')}`;
+  }
+  // EDL/FCPXML timecode helper: assumes 24fps, no drop frame
+  function tcFromFrames(frames, fps = 24) {
+    const h = Math.floor(frames / (3600 * fps));
+    const m = Math.floor((frames / (60 * fps)) % 60);
+    const s = Math.floor((frames / fps) % 60);
+    const f = Math.floor(frames % fps);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}:${String(f).padStart(2,'0')}`;
+  }
+  function downloadText(filename, text) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  async function imgToDataUrl(src) {
+    // Prefer embedded data URLs (works in file:// without fetch)
+    const m = src.match(/sh(\d+)\.png/);
+    if (m && window.SHOT_DATAURLS) {
+      const n = parseInt(m[1], 10);
+      if (window.SHOT_DATAURLS[n]) return window.SHOT_DATAURLS[n];
+    }
+    const r = await fetch(src);
+    const blob = await r.blob();
+    return new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = rej;
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  // Swap all thumbnail <img> srcs to embedded dataURLs so file:// also displays them
+  (function swapThumbsToEmbedded() {
+    if (!window.SHOT_DATAURLS) return;
+    document.querySelectorAll('.thumb img').forEach(img => {
+      const m = img.src.match(/sh(\d+)\.png/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (window.SHOT_DATAURLS[n]) img.src = window.SHOT_DATAURLS[n];
+      }
+    });
+  })();
+
+  // ----- PDF Export (via html2canvas — preserves Chinese fonts) -----
+  function buildPrintHTML(filename, perPageStr) {
+    const ppMap = { '1 (大图)': 1, '2': 2, '4 (标准)': 4, '6 (紧凑)': 6 };
+    const pp = ppMap[perPageStr] || 2;
+    const totalDur = SHOTS.reduce((s, x) => s + x.durSec, 0);
+    const totalPages = Math.ceil(SHOTS.length / pp);
+    const today = new Date().toISOString().slice(0, 10);
+
+    let html = '';
+    // Cover
+    html += `
+      <section class="print-page cover">
+        <div class="pp-brand">FRAMELINE</div>
+        <div class="pp-eyebrow">Storyboard</div>
+        <div class="pp-scene-title">${SCENE_META.title}</div>
+        <div class="pp-slug">${SCENE_META.slug}</div>
+        <div class="pp-meta">${SHOTS.length} SHOTS &nbsp;·&nbsp; ${fmtDur(totalDur)} TOTAL &nbsp;·&nbsp; ${SCENE_META.fps} FPS</div>
+        <div class="pp-footer">Generated ${today} · ${filename}</div>
+      </section>
+    `;
+
+    // Shot pages
+    for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+      const slice = SHOTS.slice(pageIdx * pp, pageIdx * pp + pp);
+      let shotsHTML = '';
+      let lastSection = null;
+      slice.forEach(s => {
+        if (s.section !== lastSection) {
+          shotsHTML += `<div class="pp-section-divider"><span>${s.section}</span><span class="line"></span></div>`;
+          lastSection = s.section;
+        }
+        const dataUrl = (window.SHOT_DATAURLS && window.SHOT_DATAURLS[s.id]) || `shots/sh${String(s.id).padStart(2,'0')}.png`;
+        shotsHTML += `
+          <div class="pp-shot">
+            <div class="pp-thumb-wrap">
+              <img class="pp-thumb" src="${dataUrl}" />
+              <div class="pp-shot-badge">SH ${String(s.id).padStart(2,'0')}</div>
+            </div>
+            <div class="pp-meta-row">
+              <span>${s.shotType}</span><span class="sep">·</span>
+              <span>${s.move}</span><span class="sep">·</span>
+              <span>${s.lens}</span><span class="sep">·</span>
+              <span>${fmtDur(s.durSec)}</span>
+            </div>
+            <div class="pp-desc">${s.desc}</div>
+            ${s.dialogue ? `<div class="pp-dialogue">${s.dialogue}</div>` : ''}
+            ${s.sfx.length ? `<div class="pp-sfx">SFX · ${s.sfx.join(' · ')}</div>` : ''}
+          </div>
+        `;
+      });
+
+      html += `
+        <section class="print-page">
+          <header class="pp-header">
+            <span><span class="b">FRAMELINE</span> &nbsp;·&nbsp; ${SCENE_META.title}</span>
+            <span>Page ${pageIdx + 1} / ${totalPages}</span>
+          </header>
+          <div class="pp-shots pp-${pp}">${shotsHTML}</div>
+        </section>
+      `;
+    }
+    return html;
+  }
+
+  async function exportPDF(filename, perPage) {
+    const { jsPDF } = window.jspdf;
+    const root = document.getElementById('print-root');
+    root.innerHTML = buildPrintHTML(filename, perPage);
+
+    // Wait for images to load
+    const imgs = [...root.querySelectorAll('img')];
+    await Promise.all(imgs.map(img => img.complete ? null : new Promise(res => { img.onload = img.onerror = res; })));
+
+    const pages = [...root.querySelectorAll('.print-page')];
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    for (let i = 0; i < pages.length; i++) {
+      const canvas = await html2canvas(pages[i], {
+        scale: 2.5,
+        backgroundColor: '#F5F5F5',
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/png');   // 无损，避免 JPEG 把密排线压糊
+      if (i > 0) doc.addPage();
+      doc.addImage(imgData, 'PNG', 0, 0, pageW, pageH, undefined, 'FAST');
+    }
+
+    root.innerHTML = ''; // cleanup
+    doc.save(filename + '.pdf');
+  }
+
+
+  // 嵌图前把分镜图缩小成 JPEG，避免通告表文件过大
+  function downscaleDataUrl(dataUrl, maxW) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        try { resolve(c.toDataURL('image/jpeg', 0.82)); }
+        catch (e) { resolve(dataUrl); }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  // ----- Excel 通告表 Export (via ExcelJS，每行配分镜图) -----
+  // 给实拍剧组排通告 / AI 剧组排生成任务用的镜头明细表
+  async function exportXLSX(filename) {
+    if (typeof ExcelJS === 'undefined') { toast('Excel 组件未加载（需联网）'); return; }
+    const fps = SCENE_META.fps;
+    const totalDur = SHOTS.reduce((s, x) => s + x.durSec, 0);
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('分镜通告表', { views: [{ state: 'frozen', ySplit: 4 }] });
+    ws.columns = [
+      { width: 8 }, { width: 24 }, { width: 9 }, { width: 11 }, { width: 7 }, { width: 7 },
+      { width: 16 }, { width: 50 }, { width: 28 }, { width: 22 }, { width: 16 }
+    ];
+
+    // 标题两行
+    ws.mergeCells('A1:K1');
+    ws.getCell('A1').value = SCENE_META.title;
+    ws.getCell('A1').font = { bold: true, size: 14 };
+    ws.mergeCells('A2:K2');
+    ws.getCell('A2').value = `${SCENE_META.slug}    ${SHOTS.length} 镜 · 总时长 ${fmtDur(totalDur)} · ${fps}fps`;
+    ws.getCell('A2').font = { size: 10, color: { argb: 'FF888888' } };
+
+    // 表头（第 4 行）
+    const header = ['镜号', '画面', '景别', '运镜', '焦段', '时长', '机位 / 调度', '画面描述', '台词', '音效 SFX', '备注'];
+    const hr = ws.getRow(4);
+    hr.values = header;
+    hr.height = 22;
+    hr.eachCell(c => {
+      c.font = { bold: true, size: 11 };
+      c.alignment = { vertical: 'middle' };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F2' } };
+      c.border = { bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } } };
+    });
+
+    // 数据行 + 配图
+    let r = 5;
+    for (const s of SHOTS) {
+      const plan = (typeof SHOT_PLAN !== 'undefined' && SHOT_PLAN[s.id]) ? SHOT_PLAN[s.id] : null;
+      const row = ws.getRow(r);
+      row.values = [
+        'SH' + String(s.id).padStart(2, '0'),
+        '',
+        s.shotType || '',
+        s.move || '',
+        s.lens || '',
+        fmtDur(s.durSec),
+        plan ? plan.name : '',
+        (s.desc || '').replace(/\s*\n\s*/g, ' '),
+        s.dialogue || '',
+        (s.sfx || []).join(' / '),
+        ''
+      ];
+      row.height = 76;
+      row.alignment = { vertical: 'middle', wrapText: true };
+      // 嵌入分镜图（取 base64，锚定到「画面」列 B）
+      const du = (window.SHOT_DATAURLS && window.SHOT_DATAURLS[s.id]) || null;
+      if (du && du.indexOf(',') > 0) {
+        const small = await downscaleDataUrl(du, 360);
+        const imgId = wb.addImage({ base64: small.split(',')[1], extension: 'jpeg' });
+        ws.addImage(imgId, {
+          tl: { col: 1.12, row: (r - 1) + 0.12 },
+          ext: { width: 150, height: 84 }
+        });
+      }
+      r++;
+    }
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename + '.xlsx';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // ----- EDL Export (CMX3600 format) -----
+  function exportEDL(filename) {
+    const fps = SCENE_META.fps;
+    let frame = 3600 * fps; // Start at 01:00:00:00 (industry standard)
+    let edl = `TITLE: ${SCENE_META.title.toUpperCase()}\nFCM: NON-DROP FRAME\n\n`;
+    SHOTS.forEach((s, i) => {
+      const durF = s.durSec * fps;
+      const recIn = tcFromFrames(frame, fps);
+      const recOut = tcFromFrames(frame + durF, fps);
+      const srcIn = '00:00:00:00';
+      const srcOut = tcFromFrames(durF, fps);
+      const eventNum = String(i + 1).padStart(3, '0');
+      const reel = `SH${String(s.id).padStart(3,'0')}`;
+      edl += `${eventNum}  ${reel.padEnd(8)} V     C        ${srcIn} ${srcOut} ${recIn} ${recOut}\n`;
+      edl += `* FROM CLIP NAME: SH ${String(s.id).padStart(2,'0')} - ${s.shotType} - ${s.move}\n`;
+      edl += `* COMMENT: ${s.desc.replace(/\n/g, ' ').slice(0, 80)}\n`;
+      if (s.dialogue) edl += `* DIALOGUE: ${s.dialogue}\n`;
+      edl += '\n';
+      frame += durF;
+    });
+    downloadText(filename + '.edl', edl);
+  }
+
+  // ----- FCPXML Export -----
+  function exportFCPXML(filename) {
+    const fps = SCENE_META.fps;
+    const frameDuration = `1/${fps}s`;
+    const tcFmt = `1/${fps}s`;
+    let offsetFrames = 0;
+    const escape = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const assets = SHOTS.map(s => {
+      const id = `r${s.id + 1}`;
+      const src = `shots/sh${String(s.id).padStart(2,'0')}.png`;
+      return `        <asset id="${id}" name="SH${String(s.id).padStart(2,'0')}" src="${src}" start="0s" duration="${s.durSec}s" hasVideo="1"/>`;
+    }).join('\n');
+
+    const clips = SHOTS.map(s => {
+      const id = `r${s.id + 1}`;
+      const dur = `${s.durSec}s`;
+      const off = `${offsetFrames}s`;
+      offsetFrames += s.durSec;
+      return `                <video name="SH ${String(s.id).padStart(2,'0')} · ${s.shotType} · ${s.move}" offset="${off}" ref="${id}" duration="${dur}">
+                    <note>${escape(s.desc)}</note>
+                </video>`;
+    }).join('\n');
+
+    const totalDur = SHOTS.reduce((sum, s) => sum + s.durSec, 0);
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+<fcpxml version="1.10">
+    <resources>
+        <format id="r1" name="FFVideoFormat1080p${fps}" frameDuration="${frameDuration}" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
+${assets}
+    </resources>
+    <library>
+        <event name="${escape(SCENE_META.title)}">
+            <project name="${escape(SCENE_META.title)}">
+                <sequence format="r1" duration="${totalDur}s" tcStart="3600s" tcFormat="NDF">
+                    <spine>
+${clips}
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+    </library>
+</fcpxml>
+`;
+    downloadText(filename + '.fcpxml', xml);
+  }
+
+  // ----- Replace doExport -----
+  async function doExport() {
+    const fmt = document.querySelector('#export-tabs .modal-tab.active').dataset.fmt;
+    const name = document.getElementById('export-filename').value || 'storyboard';
+    const perPage = document.getElementById('export-per-page').value;
+    closeModal('export-modal');
+    const btn = document.querySelector('#export-modal .modal-btn-primary');
+    try {
+      if (fmt === 'pdf') {
+        toast('正在生成 PDF...');
+        await exportPDF(name, perPage);
+        toast(`已下载 ${name}.pdf`, 'success');
+      } else if (fmt === 'xlsx') {
+        toast('正在生成通告表...');
+        await exportXLSX(name);
+        toast(`已下载 ${name}.xlsx`, 'success');
+      } else if (fmt === 'edl') {
+        exportEDL(name);
+        toast(`已下载 ${name}.edl`, 'success');
+      } else if (fmt === 'fcpxml') {
+        exportFCPXML(name);
+        toast(`已下载 ${name}.fcpxml`, 'success');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('导出失败：' + e.message);
+    }
+  }
+
+
+  // ----- Lightbox -----
+  const SHOT_META = {
+    1: { title: 'SH 01', meta: 'WIDE · STATIC · 24mm · 0:04' },
+    2: { title: 'SH 02', meta: 'MED · DOLLY IN · 35mm · 0:03' },
+    3: { title: 'SH 03', meta: 'CU · STATIC · 85mm · 0:05' },
+    4: { title: 'SH 04', meta: 'OTS · HANDHELD · 50mm · 0:04' },
+    5: { title: 'SH 05', meta: 'OTS REV · STATIC · 50mm · 0:03' },
+    6: { title: 'SH 06', meta: 'ECU · SLOW PUSH · 100mm · 0:05' },
+  };
+  function openLightbox(n) {
+    const lb = document.getElementById('lightbox');
+    const src = (window.SHOT_DATAURLS && window.SHOT_DATAURLS[n]) ? window.SHOT_DATAURLS[n] : `shots/sh${String(n).padStart(2,'0')}.png`;
+    document.getElementById('lightbox-img').src = src;
+    const m = SHOT_META[n];
+    document.getElementById('lightbox-meta').innerHTML = `<span>${m.title}</span><span class="divider">·</span><span>${m.meta}</span>`;
+    lb.classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+  document.getElementById('lightbox').addEventListener('click', e => {
+    if (e.target.id === 'lightbox') closeLightbox();
+  });
+
+  // ----- Breakdown loading -----
+  // Detect if running under our local Node server (vs file:// or other server)
+  const HAS_API = location.protocol === 'http:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+  async function runBreakdown() {
+    if (!HAS_API) return runBreakdownFake();
+    const overlay = document.getElementById('loading-overlay');
+    const textEl = document.getElementById('loading-text');
+    const bar = document.getElementById('loading-bar');
+    overlay.classList.add('open');
+    bar.style.width = '15%';
+    textEl.textContent = '正在调用 AI 拆解剧本...';
+
+    // Get scene + script from left panel
+    const scene = document.querySelector('.scene-slug-input').value;
+    const script = document.querySelector('.script-textarea').value;
+
+    try {
+      const r = await fetch('/api/breakdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scene, script }),
+      });
+      bar.style.width = '70%';
+      textEl.textContent = '正在解析镜头结构...';
+      if (!r.ok) throw new Error((await r.json()).error || 'API error');
+      const data = await r.json();
+      bar.style.width = '100%';
+
+      // 更新左上角场景信息（slug / 标题）+ 顶部标题
+      if (data.slug) {
+        const slugEl = document.getElementById('scene-slug');
+        if (slugEl) slugEl.value = data.slug;
+        SCENE_META.slug = data.slug;
+      }
+      if (data.title) {
+        const titleEl = document.getElementById('scene-title');
+        if (titleEl) titleEl.textContent = data.title;
+        SCENE_META.title = data.title;
+      }
+      // 同步导出用的文件名（去掉文件名非法字符）
+      const fnEl = document.getElementById('export-filename');
+      if (fnEl) fnEl.value = (data.title || data.slug || 'storyboard').replace(/[\\/:*?"<>|]/g, ' ').trim();
+      // 缓存角色信息（含性别），供出图时传给 server
+      window.CAST = (data.characters || []).map(c => ({ name: c.name, gender: c.gender, note: c.note || '', ref: null }));
+      if (typeof renderCast === 'function') renderCast();
+
+      // 用拆解数据重建调度图（人物位置 + 每镜机位），并重渲染
+      BLOCKING = buildBlockingFromBreakdown(data);
+      activeShot = (data.shots && data.shots[0] && data.shots[0].id) || 1;
+      renderFloorplanAll();
+
+      // Replace global SHOTS array and rebuild shot rows
+      if (data.shots && data.shots.length) {
+        rebuildShotRows(data.shots);
+      }
+
+      setTimeout(() => {
+        overlay.classList.remove('open');
+        toast(`已生成 ${data.shots.length} 个镜头`, 'success');
+      }, 300);
+    } catch (e) {
+      overlay.classList.remove('open');
+      toast('拆解失败：' + e.message);
+      console.error(e);
+    }
+  }
+
+  function runBreakdownFake() {
+    const steps = [
+      '正在解析场景结构...',
+      '识别角色与道具...',
+      '生成镜号与景别建议...',
+      '匹配运镜与焦段...',
+      '计算时长与节奏...',
+    ];
+    const overlay = document.getElementById('loading-overlay');
+    const textEl = document.getElementById('loading-text');
+    const bar = document.getElementById('loading-bar');
+    overlay.classList.add('open');
+    bar.style.width = '0%';
+    let i = 0;
+    textEl.textContent = steps[0];
+    const total = steps.length;
+    const tick = () => {
+      i++;
+      bar.style.width = ((i / total) * 100) + '%';
+      if (i < total) {
+        textEl.textContent = steps[i];
+        setTimeout(tick, 420);
+      } else {
+        setTimeout(() => {
+          overlay.classList.remove('open');
+          toast('已生成 6 个镜头（demo · 启动 server 后调真 AI）', 'success');
+        }, 350);
+      }
+    };
+    setTimeout(tick, 420);
+  }
+
+  // Replace shot rows with new data from API
+  function rebuildShotRows(shots) {
+    // Update global SHOTS data
+    SHOTS.length = 0;
+    shots.forEach(s => SHOTS.push({
+      id: s.id, shotType: s.shotType, move: s.move, lens: s.lens, durSec: s.durSec,
+      desc: s.desc, dialogue: s.dialogue || '', sfx: s.sfx || [], section: s.section || 'A · 主场'
+    }));
+    // Update SHOT_META for lightbox
+    shots.forEach(s => {
+      SHOT_META[s.id] = {
+        title: `SH ${String(s.id).padStart(2,'0')}`,
+        meta: `${s.shotType} · ${s.move} · ${s.lens} · ${fmtDur(s.durSec)}`,
+      };
+    });
+
+    // Rebuild DOM rows
+    const main = document.querySelector('.storyboard-area');
+    // Remove existing shot rows + section dividers (keep sheet-header)
+    [...main.querySelectorAll('.shot-row, .sheet-divider')].forEach(el => el.remove());
+    // Add end placeholder back later
+
+    // Group by section
+    let lastSection = null;
+    shots.forEach((s, i) => {
+      if (s.section !== lastSection) {
+        const div = document.createElement('div');
+        div.className = 'sheet-divider';
+        const sectionShots = shots.filter(x => x.section === s.section);
+        const sectionDur = sectionShots.reduce((a,b) => a + b.durSec, 0);
+        div.innerHTML = `<span class="divider-tag">${s.section}</span><div class="divider-line"></div><span class="divider-tag" style="color: var(--text-faint);">${sectionShots.length} SHOTS · ${fmtDur(sectionDur)}</span>`;
+        main.appendChild(div);
+        lastSection = s.section;
+      }
+      const row = document.createElement('div');
+      row.className = 'shot-row fade-in';
+      row.dataset.shot = s.id;
+      row.innerHTML = renderShotRowHTML(s);
+      main.appendChild(row);
+    });
+    // Update sheet header count
+    const headerH1 = document.querySelector('.sheet-header h1');
+    if (headerH1) {
+      const sceneSlug = document.querySelector('.scene-slug-input').value;
+      headerH1.textContent = sceneSlug.replace(/^(INT\.|EXT\.)\s*/i, '').replace(/—.*$/, '').trim() || 'Scene';
+    }
+  }
+
+  const SHOT_OPTS = ['WIDE','MED','MCU','CU','ECU','OTS','OTS · REV','POV','EWS'];
+  const MOVE_OPTS = ['STATIC','DOLLY IN','DOLLY OUT','PAN L','PAN R','TILT UP','TILT DOWN','TRUCK L','TRUCK R','CRANE','HANDHELD','SLOW PUSH','ZOOM IN','ZOOM OUT'];
+  const LENS_OPTS = ['18mm','24mm','35mm','50mm','85mm','100mm','135mm','200mm'];
+
+  function chipDropHTML(val, opts, group) {
+    return `<span class="chip-wrap"><span class="chip" data-group="${group}" onclick="toggleChipMenu(event,this)">${val}</span><span class="chip-menu">${
+      opts.map(o => `<div class="chip-menu-item${o===val?' selected':''}" data-val="${o}">${o}</div>`).join('')
+    }</span></span>`;
+  }
+
+  /* ============ Scene floor plan (Previs Pro 2D style · 动态) ============ */
+  // 归一化坐标 (0..1) → SVG 房间内坐标（房间放置区）
+  function fpX(nx) { return 120 + Math.max(0, Math.min(1, nx)) * 560; }
+  function fpY(ny) { return 95  + Math.max(0, Math.min(1, ny)) * 155; }
+  // 焦段 → 水平视场角（全画幅近似，36mm 画幅宽）
+  function lensFov(mm) { return 2 * Math.atan(18 / (mm || 50)) * 180 / Math.PI; }
+
+  // 调度模型：chars[{name,gender,nx,ny,wheelchair}] + shots{id:{nx,ny,lens,aim,label}}
+  // aim = 人物 name 或 'mid'（质心）。默认 = 仓库演示场（归一化后等价于原写死数据）
+  const DEMO_BLOCKING = {
+    chars: [
+      { name: '陈默', gender: 'male',   nx: 0.36, ny: 0.78 },
+      { name: '林',   gender: 'female', nx: 0.79, ny: 0.35, wheelchair: true },
+    ],
+    shots: {
+      1: { nx: 0.20, ny: 0.97, lens: 24,  aim: 'mid',  label: '全景 · 建立' },
+      2: { nx: 0.24, ny: 0.83, lens: 35,  aim: '林',   label: '中景 · 推进' },
+      3: { nx: 0.49, ny: 0.95, lens: 85,  aim: '陈默', label: '特写 · 陈默' },
+      4: { nx: 0.30, ny: 0.83, lens: 50,  aim: '林',   label: '过肩 · 正打林' },
+      5: { nx: 0.92, ny: 0.42, lens: 50,  aim: '陈默', label: '过肩 · 反打陈' },
+      6: { nx: 0.46, ny: 0.86, lens: 100, aim: '陈默', label: '大特写 · 手' },
+    },
+  };
+  let BLOCKING = DEMO_BLOCKING;
+  let activeShot = 1;
+
+  function charByName(name) { return (BLOCKING.chars || []).find(c => c.name === name); }
+  function aimPointXY(aim) {
+    const c = charByName(aim);
+    if (c) return { x: fpX(c.nx), y: fpY(c.ny) };
+    const cs = BLOCKING.chars || [];
+    if (cs.length) {
+      const mx = cs.reduce((a, c) => a + c.nx, 0) / cs.length;
+      const my = cs.reduce((a, c) => a + c.ny, 0) / cs.length;
+      return { x: fpX(mx), y: fpY(my) };
+    }
+    return { x: fpX(0.5), y: fpY(0.5) };
+  }
+  function shotCam(id) { return (BLOCKING.shots || {})[id]; }
+
+  function renderActors() {
+    const layer = document.getElementById('fp-actors'); if (!layer) return;
+    let html = '';
+    (BLOCKING.chars || []).forEach(c => {
+      const x = fpX(c.nx), y = fpY(c.ny);
+      const tag = c.gender === 'female' ? ' ♀' : (c.gender === 'male' ? ' ♂' : '');
+      if (c.wheelchair) {
+        html += `<g>
+          <circle cx="${x-16}" cy="${y}" r="12" fill="none" stroke="#9AA2AA" stroke-width="3"/>
+          <circle cx="${x+16}" cy="${y}" r="12" fill="none" stroke="#9AA2AA" stroke-width="3"/>
+          <rect x="${x-12}" y="${y-12}" width="24" height="22" rx="3" fill="#727982"/>
+          <circle cx="${x}" cy="${y-10}" r="7" fill="#8A919A"/>
+          <text x="${x}" y="${y+30}" text-anchor="middle" font-size="12" font-weight="600" fill="#3A4047">${c.name}${tag}</text>
+        </g>`;
+      } else {
+        html += `<g>
+          <ellipse cx="${x}" cy="${y+2}" rx="15" ry="10" fill="#727982"/>
+          <circle cx="${x}" cy="${y-5}" r="8" fill="#8A919A"/>
+          <text x="${x}" y="${y+28}" text-anchor="middle" font-size="12" font-weight="600" fill="#3A4047">${c.name}${tag}</text>
+        </g>`;
+      }
+    });
+    layer.innerHTML = html;
+  }
+
+  function renderAxis() {
+    const layer = document.getElementById('fp-axis'); if (!layer) return;
+    const cs = BLOCKING.chars || [];
+    if (cs.length >= 2) {
+      const a = { x: fpX(cs[0].nx), y: fpY(cs[0].ny) }, b = { x: fpX(cs[1].nx), y: fpY(cs[1].ny) };
+      layer.innerHTML = `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#B4BCC4" stroke-width="1.4" stroke-dasharray="6 5"/>`;
+    } else layer.innerHTML = '';
+  }
+
+  function renderFloorCam() {
+    const layer = document.getElementById('fp-cam-layer'); if (!layer) return;
+    const c = shotCam(activeShot);
+    if (!c) { layer.innerHTML = ''; return; }
+    const cx = fpX(c.nx), cy = fpY(c.ny);
+    const t = aimPointXY(c.aim);
+    const ang = Math.atan2(t.y - cy, t.x - cx);
+    const half = lensFov(c.lens) / 2 * Math.PI / 180;
+    const L = Math.hypot(t.x - cx, t.y - cy) + 52;
+    const e1x = cx + L * Math.cos(ang - half), e1y = cy + L * Math.sin(ang - half);
+    const e2x = cx + L * Math.cos(ang + half), e2y = cy + L * Math.sin(ang + half);
+    const deg = ang * 180 / Math.PI;
+    const pts = `${cx},${cy} ${e1x.toFixed(1)},${e1y.toFixed(1)} ${e2x.toFixed(1)},${e2y.toFixed(1)}`;
+
+    let html = `<g class="fp-active-cam">
+      <polygon points="${pts}" fill="#FFFFFF" fill-opacity="0.5"/>
+      <polygon points="${pts}" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.9"/>
+    </g>`;
+    Object.keys(BLOCKING.shots || {}).forEach(k => {
+      const n = +k; if (n === activeShot) return;
+      const m = BLOCKING.shots[n]; const mx = fpX(m.nx), my = fpY(m.ny);
+      html += `<g class="fp-cam-marker" onclick="viewShotInPlan(${n})">
+        <circle cx="${mx}" cy="${my}" r="14" fill="#FFFFFF" fill-opacity="0.01"/>
+        <rect class="mk-body" x="${mx-9}" y="${my-7}" width="18" height="14" rx="2" fill="#AEB6BE" stroke="#8A929A" stroke-width="1"/>
+        <text x="${mx}" y="${my+4}" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF">${n}</text>
+      </g>`;
+    });
+    html += `<g class="fp-active-cam">
+      <g transform="translate(${cx},${cy}) rotate(${deg.toFixed(1)})">
+        <rect x="-13" y="-9" width="26" height="18" rx="2.5" fill="#454B52" stroke="#2C3138" stroke-width="1"/>
+        <rect x="9" y="-5" width="8" height="10" rx="1.5" fill="#6B7178"/>
+      </g>
+      <rect x="${cx-23}" y="${cy+15}" width="46" height="18" rx="3" fill="#FFFFFF" stroke="#C2CAD1" stroke-width="1"/>
+      <text x="${cx}" y="${cy+27}" text-anchor="middle" font-size="11" fill="#3A4047" font-family="'JetBrains Mono', monospace">${c.lens}mm</text>
+    </g>`;
+    layer.innerHTML = html;
+  }
+
+  function renderFloorplanAll() { renderAxis(); renderActors(); renderFloorCam(); }
+
+  // 从拆解返回的数据构建调度模型（人物坐标 + 每镜机位）
+  function buildBlockingFromBreakdown(data) {
+    const chars = (data.characters || []).map(c => ({
+      name: c.name, gender: c.gender,
+      nx: (typeof c.x === 'number') ? c.x : 0.5,
+      ny: (typeof c.y === 'number') ? c.y : 0.5,
+      wheelchair: /轮椅/.test(c.note || ''),
+    }));
+    const shots = {};
+    (data.shots || []).forEach(s => {
+      const cam = s.cam || {};
+      shots[s.id] = {
+        nx: (typeof cam.x === 'number') ? cam.x : 0.3,
+        ny: (typeof cam.y === 'number') ? cam.y : 0.9,
+        lens: parseInt(s.lens) || 50,
+        aim: cam.aim || (chars[0] && chars[0].name) || 'mid',
+        label: `${s.shotType} · ${s.move}`,
+      };
+    });
+    return { chars, shots };
+  }
+
+  function selectShot(id) {
+    if (!shotCam(id)) return;
+    activeShot = id;
+    renderFloorCam();
+    const c = shotCam(id);
+    const cap = document.getElementById('fp-active-cap');
+    if (cap) cap.innerHTML = `正在看 SH${String(id).padStart(2,'0')} · ${c.label || ''} <span class="lens">· ${c.lens}mm</span>`;
+    document.querySelectorAll('.shot-row.shot-active').forEach(r => r.classList.remove('shot-active'));
+    const row = document.querySelector(`.shot-row[data-shot="${id}"]`);
+    if (row) row.classList.add('shot-active');
+  }
+
+  // 打开浮窗（可带镜号：打开并选中该镜头）
+  function openFloorplan(id) {
+    const fp = document.getElementById('floorplan');
+    selectShot(id || activeShot);
+    fp.classList.add('open');
+    const btn = document.getElementById('floorplan-btn');
+    if (btn) btn.classList.add('btn-floorplan-active');
+  }
+  function closeFloorplan() {
+    document.getElementById('floorplan').classList.remove('open');
+    const btn = document.getElementById('floorplan-btn');
+    if (btn) btn.classList.remove('btn-floorplan-active');
+    document.querySelectorAll('.shot-row.shot-active').forEach(r => r.classList.remove('shot-active'));
+  }
+  // 行右侧"调度图"按钮 → 打开浮窗并定位到该镜头
+  function viewShotInPlan(id) { openFloorplan(id); }
+
+  // 浮窗可拖动（拖标题栏）
+  (function makeFloorplanDraggable() {
+    const win = document.getElementById('floorplan');
+    const head = document.getElementById('fpw-head');
+    if (!win || !head) return;
+    let drag = null;
+    head.addEventListener('mousedown', e => {
+      if (e.target.closest('.fpw-close')) return;
+      const r = win.getBoundingClientRect();
+      drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+      // 清掉居中用的 transform，改为按 left/top 绝对定位，避免拖动时位置翻倍偏移
+      win.style.transform = 'none';
+      win.style.left = r.left + 'px';
+      win.style.top = r.top + 'px';
+      win.style.right = 'auto';
+      document.body.style.userSelect = 'none';
+    });
+    window.addEventListener('mousemove', e => {
+      if (!drag) return;
+      const w = win.offsetWidth, h = win.offsetHeight;
+      let nx = e.clientX - drag.dx, ny = e.clientY - drag.dy;
+      nx = Math.max(8, Math.min(nx, window.innerWidth - w - 8));
+      ny = Math.max(60, Math.min(ny, window.innerHeight - h - 8));
+      win.style.left = nx + 'px';
+      win.style.top = ny + 'px';
+    });
+    window.addEventListener('mouseup', () => { drag = null; document.body.style.userSelect = ''; });
+  })();
+
+  // 每行右侧标记：一个"查看机位"按钮 + 中文说明，纯文字
+  function axisMarkerHTML(id) {
+    const c = shotCam(id) || {};
+    return `<div class="axis-marker">
+      <button class="setup-badge" onclick="viewShotInPlan(${id})" title="在场景调度图中查看这个机位">▸ 调度图</button>
+      <span class="axis-note">${c.label || ''}</span>
+    </div>`;
+  }
+
+  // 填充 6 个静态行的标记占位
+  document.querySelectorAll('.axis-marker[data-axis]').forEach(el => {
+    el.outerHTML = axisMarkerHTML(parseInt(el.dataset.axis, 10));
+  });
+  // 初始：用演示场渲染演员/轴线/机位到（隐藏的）浮窗里，不弹窗、不高亮行
+  activeShot = 1;
+  renderFloorplanAll();
+  (function () {
+    const c = shotCam(1);
+    const cap = document.getElementById('fp-active-cap');
+    if (cap && c) cap.innerHTML = `正在看 SH01 · ${c.label || ''} <span class="lens">· ${c.lens}mm</span>`;
+  })();
+
+  function renderShotRowHTML(s) {
+    const num = String(s.id).padStart(2, '0');
+    const sfxTags = (s.sfx || []).map(x => `<span class="sfx-tag">SFX · ${x}</span>`).join('');
+    const dialogue = s.dialogue ? `<div class="dialogue">${s.dialogue}</div>` : '';
+    return `
+      <div class="row-toolbar">
+        <button onclick="toast('已复制 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="复制">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button onclick="toast('已删除 SH'+this.closest('.shot-row').dataset.shot.padStart(2,'0'))" title="删除">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+        </button>
+      </div>
+      <div>
+        <div class="shot-num-big mono">${num}</div>
+        <div class="shot-num-label">SH</div>
+      </div>
+      <div>
+        <div class="thumb thumb-empty" onclick="regenShot(${s.id})">
+          <span class="thumb-placeholder-glyph">— 点击生成 —</span>
+          <button class="generate-btn">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            生成线稿
+          </button>
+        </div>
+        <div class="mt-2 flex items-center gap-2 text-[10.5px] mono" style="color: var(--text-faint); letter-spacing: 0.06em;">
+          <span class="status-dot" style="background: var(--text-faint);"></span>
+          <span>PENDING</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="chip-label">SHOT</span>
+          ${chipDropHTML(s.shotType, SHOT_OPTS, 'shot')}
+          ${chipDropHTML(s.move, MOVE_OPTS, 'move')}
+          <span class="chip-label" style="margin-left: 10px;">LENS</span>
+          ${chipDropHTML(s.lens, LENS_OPTS, 'lens')}
+          <span class="chip-label" style="margin-left: 10px;">DUR</span>
+          <span class="duration">${fmtDur(s.durSec)}</span>
+        </div>
+        <div class="desc">${s.desc}</div>
+        ${dialogue}
+        ${sfxTags ? `<div class="flex flex-wrap gap-1.5">${sfxTags}</div>` : ''}
+      </div>
+      ${axisMarkerHTML(s.id)}
+    `;
+  }
+
+  // ----- Regenerate single shot (now real API call) -----
+  /* ============ 角色资产 / 一致性参考 ============ */
+  function renderCast() {
+    const list = document.getElementById('cast-list'); if (!list) return;
+    const cast = window.CAST || [];
+    if (!cast.length) {
+      list.innerHTML = `<div style="color:var(--text-faint);font-size:13px;padding:8px 0;line-height:1.6;">还没有角色。先在左侧贴剧本、点「拆解为镜头」，AI 会识别出出场角色，再来这里给他们定参考图。</div>`;
+      return;
+    }
+    list.innerHTML = cast.map((c, i) => {
+      const g = c.gender === 'female' ? '♀ 女' : (c.gender === 'male' ? '♂ 男' : '—');
+      const thumb = c.ref
+        ? `<img src="${c.ref}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border-strong);background:var(--paper);flex-shrink:0;" />`
+        : `<div style="width:56px;height:56px;border-radius:6px;border:1px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:9px;flex-shrink:0;">无参考</div>`;
+      return `<div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface-2);">
+        ${thumb}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13.5px;font-weight:600;">${c.name} <span style="font-size:11px;color:var(--text-faint);font-weight:400;">${g}</span></div>
+          <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.note || '—'}</div>
+        </div>
+        <button id="cast-gen-${i}" class="modal-btn-secondary" style="padding:7px 12px;font-size:12px;white-space:nowrap;" onclick="genCharRef(${i})">${c.ref ? '重新生成' : '生成参考图'}</button>
+      </div>`;
+    }).join('');
+  }
+  function openCast() { renderCast(); openModal('cast-modal'); }
+
+  async function genCharRef(idx) {
+    if (!HAS_API) { toast('启动 server 后才能生成参考图'); return; }
+    const cast = window.CAST || []; const c = cast[idx]; if (!c) return;
+    const btn = document.getElementById('cast-gen-' + idx);
+    if (btn) { btn.disabled = true; btn.textContent = '生成中…'; }
+    const genderTxt = c.gender === 'female' ? '女性' : (c.gender === 'male' ? '男性' : '');
+    const shot = {
+      id: 'ref-' + idx, shotType: 'MED', move: 'STATIC', lens: '50mm', durSec: 0,
+      desc: `角色参考立绘：${c.name}，${genderTxt}${c.note ? ('，' + c.note) : ''}。半身/全身，中性站姿，面向镜头，清晰可辨的外形与剪影，简洁背景。`,
+    };
+    try {
+      const refs = c.ref ? [await downscaleDataUrl(c.ref, 512)] : [];
+      const r = await fetch('/api/generate-shot', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shot, characters: [c], refs }),
+      });
+      if (!r.ok) throw new Error((await r.json()).error || 'API error');
+      const { imageDataUrl } = await r.json();
+      c.ref = imageDataUrl;
+      renderCast();
+      toast(`${c.name} 参考图已生成`, 'success');
+    } catch (e) {
+      toast('参考图生成失败：' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = c.ref ? '重新生成' : '生成参考图'; }
+    }
+  }
+
+  // 收集本镜涉及的角色 + 它们已有的参考图（缩小后发给 server）
+  async function collectShotRefs(shot) {
+    const cast = window.CAST || [];
+    if (!cast.length) return { present: [], refs: [] };
+    let present = cast.filter(c => c.name && shot.desc && shot.desc.includes(c.name));
+    if (!present.length) present = [cast[0]]; // 兜底：用主角
+    const refs = [];
+    for (const c of present) if (c.ref) refs.push(await downscaleDataUrl(c.ref, 512));
+    return { present, refs };
+  }
+
+  async function regenShot(shotId) {
+    if (!HAS_API) {
+      toast('启动 server 后才能调真 AI');
+      return;
+    }
+    const row = document.querySelector(`.shot-row[data-shot="${shotId}"]`);
+    if (!row) return;
+    const shot = SHOTS.find(s => s.id === shotId);
+    if (!shot) return;
+    const thumb = row.querySelector('.thumb');
+    const statusDot = row.querySelector('.status-dot');
+    const statusText = row.querySelector('.status-dot + span');
+    statusDot.classList.add('pulsing');
+    if (statusText) statusText.textContent = 'GENERATING...';
+
+    try {
+      const { present, refs } = await collectShotRefs(shot);
+      const r = await fetch('/api/generate-shot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shot, characters: window.CAST || [], refs }),
+      });
+      if (!r.ok) throw new Error((await r.json()).error || 'API error');
+      const { imageDataUrl } = await r.json();
+
+      // 自动锚定：本镜涉及、但还没参考图的角色，用这张图当它的参考
+      present.forEach(c => { if (c && !c.ref) c.ref = imageDataUrl; });
+      if (typeof renderCast === 'function') renderCast();
+
+      // Replace thumb content with img
+      thumb.classList.remove('thumb-empty');
+      thumb.innerHTML = `<img src="${imageDataUrl}" alt="SH ${String(shotId).padStart(2,'0')}" />`;
+      thumb.onclick = () => {
+        document.getElementById('lightbox-img').src = imageDataUrl;
+        const m = SHOT_META[shotId];
+        document.getElementById('lightbox-meta').innerHTML = `<span>${m.title}</span><span class="divider">·</span><span>${m.meta}</span>`;
+        document.getElementById('lightbox').classList.add('open');
+      };
+      // Cache for export
+      if (window.SHOT_DATAURLS) window.SHOT_DATAURLS[shotId] = imageDataUrl;
+
+      statusDot.classList.remove('pulsing');
+      statusDot.style.background = 'var(--accent)';
+      if (statusText) {
+        statusText.textContent = 'GENERATED · v1';
+        statusText.style.color = 'var(--text-dim)';
+      }
+      toast(`SH ${String(shotId).padStart(2,'0')} 已生成`, 'success');
+    } catch (e) {
+      statusDot.classList.remove('pulsing');
+      if (statusText) statusText.textContent = 'FAILED';
+      toast('生成失败：' + e.message);
+      console.error(e);
+    }
+  }
+
+  // Override the old regen() (which only did fake animation) to call regenShot when API is available
+  function regen(e) {
+    e.stopPropagation();
+    const row = e.currentTarget.closest('.shot-row');
+    const shotId = parseInt(row?.dataset.shot, 10);
+    if (HAS_API && shotId) return regenShot(shotId);
+    // Fallback: fake animation
+    const el = e.currentTarget;
+    const original = el.innerHTML;
+    el.innerHTML = '<span class="spin-once" style="display:inline-block;">↻</span> 生成中...';
+    setTimeout(() => {
+      el.innerHTML = original;
+      toast(`SH ${String(shotId).padStart(2,'0')} 已重新生成 (demo)`, 'success');
+    }, 1100);
+  }
+
+  // ----- Regenerate all -----
+  function regenAll() {
+    const dots = document.querySelectorAll('.shot-row .status-dot');
+    dots.forEach((d, i) => {
+      setTimeout(() => {
+        d.classList.add('pulsing');
+        setTimeout(() => d.classList.remove('pulsing'), 700);
+      }, i * 120);
+    });
+    setTimeout(() => toast('已重新生成全部 6 个镜头', 'success'), dots.length * 120 + 800);
+  }
+
+  // ----- Add shot -----
+  function addShot() {
+    const n = document.querySelectorAll('.shot-row').length + 1;
+    toast(`已添加 SH ${String(n).padStart(2,'0')}`);
+  }
+
+  // ----- LIST / GRID view -----
+  function setView(view) {
+    document.body.classList.toggle('list-view', view === 'list');
+    document.querySelectorAll('.view-btn').forEach(b => {
+      b.style.background = b.dataset.view === view ? 'var(--surface-2)' : 'transparent';
+    });
+  }
+
+  // ----- Chip dropdown -----
+  function toggleChipMenu(ev, chipEl) {
+    ev.stopPropagation();
+    const menu = chipEl.nextElementSibling;
+    const wasOpen = menu.classList.contains('open');
+    document.querySelectorAll('.chip-menu.open').forEach(m => m.classList.remove('open'));
+    if (!wasOpen) menu.classList.add('open');
+  }
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.chip-menu.open').forEach(m => m.classList.remove('open'));
+  });
+  // Delegate chip menu item click
+  document.addEventListener('click', e => {
+    const item = e.target.closest('.chip-menu-item');
+    if (!item) return;
+    e.stopPropagation();
+    const menu = item.parentElement;
+    const chip = menu.previousElementSibling;
+    const oldVal = chip.textContent.trim();
+    const newVal = item.dataset.val;
+    chip.textContent = newVal;
+    chip.classList.add('selected');
+    menu.querySelectorAll('.chip-menu-item').forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    menu.classList.remove('open');
+    if (oldVal !== newVal) {
+      const row = chip.closest('.shot-row');
+      const num = row?.dataset.shot.padStart(2, '0');
+      toast(`SH ${num} · ${oldVal} → ${newVal}`);
+      setTimeout(() => chip.classList.remove('selected'), 1200);
+    }
+  });
+</script>
+</body>
+</html>

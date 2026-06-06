@@ -1,0 +1,9 @@
+# secrets — never commit
+.env
+*.env
+!.env.example
+# deps / build / os
+node_modules/
+server/generated/
+*.log
+.DS_Store
